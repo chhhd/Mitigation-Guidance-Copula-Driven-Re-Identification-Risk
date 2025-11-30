@@ -29,6 +29,6 @@ https://www.kaggle.com/datasets/aleespinosa/apple-watch-and-fitbit-data
 
 ---
 
-## 📄 라이선스 / 출처
+##  라이선스 / 출처
 데이터셋 출처: Kaggle  
 https://www.kaggle.com/datasets/aleespinosa/apple-watch-and-fitbit-data
