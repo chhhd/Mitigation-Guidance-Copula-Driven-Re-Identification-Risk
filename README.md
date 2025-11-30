@@ -3,6 +3,7 @@ Apple Watch & Fitbit 데이터 기반 사용자 위험도 분석 웹 인터페�
 
 # 프로젝트 개요
 가명정보 처리 가이드라인을 기반으로, 데이터 분포·임계값·특성 조합을 분석하여 COPULA 모델을 활용한 자동 가명처리 전략 및 재식별 위험 평가 결과를 제공하는 시스템
+<img width="1830" height="866" alt="image" src="https://github.com/user-attachments/assets/08a70b32-83e6-42b3-99f9-88fe94027db9" />
 
 
 ---
