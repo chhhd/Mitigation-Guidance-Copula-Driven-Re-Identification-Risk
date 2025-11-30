@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>임계값 분석</title>
+
+  <!-- Tailwind & Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+
+  <!-- Pretendard Variable -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css">
+
+  <style>
+    body{
+      background:#121212;
+      color:#e5e7eb;
+    }
+    :root{
+      --font-ui: 'Pretendard Variable', Pretendard, -apple-system, system-ui,
+                 'Segoe UI', Roboto, 'Noto Sans KR', 'Apple SD Gothic Neo',
+                 'Malgun Gothic', 'Helvetica Neue', Arial, sans-serif;
+    }
+    html, body{
+      font-family: var(--font-ui);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      letter-spacing: -0.01em;
+    }
+    .section-title{ font-weight: 900; letter-spacing: -0.02em; color:#1d4ed8; text-shadow:0 1px 0 rgba(255,255,255,.6); }
+    .section-title.subtle{ font-weight: 700; text-shadow:0 1px 0 rgba(255,255,255,.3); }
+    h3{ font-weight:700; letter-spacing:-0.01em; }
+    .tbl td, .tbl th, .kpi-val{ font-variant-numeric: tabular-nums; }
+    .card{
+      border-radius:1.25rem;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(15,23,42,.08);
+      border:1px solid rgba(2,6,23,.06);
+      color:#0f172a;
+    }
+    .dz{
+      border: 2px dashed #e5e7eb; border-radius: 1rem; padding: 1.25rem; background: #f8fafc;
+      transition: box-shadow .2s ease, background .2s ease, border-color .2s ease; cursor: pointer;
+    }
+    .dz:hover{ background:#f1f5f9; box-shadow:0 6px 14px rgba(2,6,23,.06); }
+    .dz-hl{ outline:2px solid #6366f1; background:rgba(99,102,241,.06) }
+    .dz-pill{
+      border-radius:9999px; background:#ffffff; height:42px; display:flex; align-items:center; justify-content:center;
+      box-shadow: inset 0 1px 0 rgba(2,6,23,.04); font-weight:600;
+    }
+    /* ZIP 업로드 네모 박스 제거 */
+    label[data-dz="fileBundleZip"].dz{
+      border:none; background:transparent; padding:0; box-shadow:none;
+    }
+    .dz-filechip{
+      display:inline-flex; align-items:center; gap:.5rem; background:#eef2ff; color:#3730a3;
+      padding:.4rem .8rem; border-radius:9999px; font-weight:600;
+    }
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0}
+    .tab-btn2{ padding:.55rem 1.15rem; border-radius:9999px; font-weight:700; background:#f1f5f9; color:#374151; transition:all .2s;
+               box-shadow: inset 0 1px 0 rgba(2,6,23,.04); }
+    .tab-btn2:hover{ background:#e2e8f0; }
+    .tab-btn2.active{ background:#2563eb; color:#fff; }
+    .summary-panel{ background:#f3f4f6; border-radius:1.25rem; padding:1.25rem; color:#0f172a; }
+    .krow{ display:grid; grid-template-columns: 200px 1fr; gap:.75rem; background:#ffffff; border-radius:.9rem; padding:.8rem 1rem; }
+    .krow + .krow{ margin-top:.6rem; }
+    .kname{ color:#475569; font-weight:700; }
+    .kval{ font-weight:800; }
+    .kval .sub{ color:#64748b; font-weight:600; margin-left:.35rem; }
+    .tbl{width:100%; border-collapse:separate; border-spacing:0 .5rem}
+    .tbl th{font-size:.9rem; color:#94a3b8; text-align:left; padding:.5rem .75rem}
+    .tbl td{background:#f8fafc; padding:.75rem .75rem}
+    /* 비교 테이블 가독성용 */
+    #compareWrap .tbl th,
+    #compareWrap .tbl td{ color:#000; }
+    .tbl tr td:first-child{border-radius:.75rem 0 0 .75rem}
+    .tbl tr td:last-child{border-radius:0 .75rem .75rem 0}
+    .pill{border-radius:9999px; padding:.5rem 1rem; border:1px solid #e5e7eb; background:#fff; color:#0f172a;}
+
+    /* 숨겨둘 요약 박스(데이터셋/모델 등) */
+    #summaryBox { display:none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 hidden">
+    <div class="px-4 py-2 rounded-lg text-sm shadow bg-rose-50 text-rose-700 border border-rose-200" role="alert" aria-live="polite"></div>
+  </div>
+
+  <!-- ====================== 데이터 로드 ====================== -->
+  <section id="load" class="py-10">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="section-title text-3xl md:text-4xl" style="color:#fff;">임계값 분석</h2>
+      <p class="text-sm text-slate-600 mt-1">파이썬 산출물을 업로드하면 브라우저에서 바로 비교합니다.</p>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-6">
+        <!-- 일괄 업로드 ZIP -->
+        <div class="card p-5 md:col-span-2" style="display:none;">
+          <h3 class="mb-2">일괄 업로드 <span class="uppercase text-slate-500 text-xs">zip</span></h3>
+          <label class="dz block text-center" data-dz="fileBundleZip">
+            <input id="fileBundleZip" type="file" accept=".zip,application/zip" class="sr-only">
+            <div id="fileBundleZipBox" class="dz-pill">
+              <i class="ti ti-upload mr-2"></i><span class="text-slate-500">&nbsp;dataset_bundle.zip 업로드</span>
+            </div>
+          </label>
+          <div id="bundleStatus" class="mt-3 text-xs text-slate-700"></div>
+        </div>
+        <!-- 전략 CSV -->
+        <div class="card p-5">
+          <h3 class="mb-2">가명화 전략 리스트 <span class="uppercase text-slate-500 text-xs">csv</span></h3>
+          <label class="dz block text-center" data-dz="fileRisk">
+            <input id="fileRisk" type="file" accept=".csv" class="sr-only">
+            <div id="fileRiskBox" class="dz-pill">
+              <i class="ti ti-upload mr-2"></i><span class="text-slate-500">&nbsp;strategy_list.csv 업로드</span>
+            </div>
+          </label>
+          <div id="statusRisk" class="mt-3 text-xs text-slate-700"></div>
+        </div>
+
+        <!-- (원본 수치형 제거) → 위험 상위 테이블 CSV -->
+        <div class="card p-5">
+          <h3 class="mb-2">위험 상위 테이블 <span class="uppercase text-slate-500 text-xs">csv</span></h3>
+          <label class="dz block text-center" data-dz="fileTopFeat">
+            <input id="fileTopFeat" type="file" accept=".csv" class="sr-only">
+            <div id="fileTopFeatBox" class="dz-pill">
+              <i class="ti ti-upload mr-2"></i><span class="text-slate-500">&nbsp;xai_feature_importance.csv 업로드</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- 통합 위험 점수 CSV -->
+        <div class="card p-5 hidden">
+          <h3 class="mb-2">통합 위험 점수 <span class="uppercase text-slate-500 text-xs">csv</span></h3>
+          <label class="dz block text-center" data-dz="fileIntegrated">
+            <input id="fileIntegrated" type="file" accept=".csv" class="sr-only">
+            <div id="fileIntegratedBox" class="dz-pill">
+              <i class="ti ti-upload mr-2"></i><span class="text-slate-500">&nbsp;integrated_risk_score.csv 업로드</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- 추천 카드 JSON -->
+        <div class="card p-5">
+          <h3 class="mb-2">추천카드 <span class="uppercase text-slate-500 text-xs">json</span></h3>
+          <label class="dz block text-center" data-dz="fileRecCards">
+            <input id="fileRecCards" type="file" accept=".json,application/json" class="sr-only">
+            <div id="fileRecCardsBox" class="dz-pill">
+              <i class="ti ti-upload mr-2"></i><span class="text-slate-500">&nbsp;recommendation_cards.json 업로드</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- 요약 JSON(데이터셋/모델 패널은 숨김) -->
+        <div class="card p-5">
+          <h3 class="mb-2">요약 <span class="uppercase text-slate-500 text-xs">json</span></h3>
+          <label class="dz block text-center" data-dz="fileSummary">
+            <input id="fileSummary" type="file" accept=".json,application/json" class="sr-only">
+            <div id="fileSummaryBox" class="dz-pill">
+              <i class="ti ti-upload mr-2"></i><span class="text-slate-500">&nbsp;vector_risk_summary.json 업로드</span>
+            </div>
+          </label>
+
+          <div id="summaryBox" class="summary-panel mt-4 hidden">
+            <div class="krow"><div class="kname">Dataset</div><div class="kval" id="sum_dataset">—</div></div>
+            <div class="krow"><div class="kname">Model</div><div class="kval" id="sum_model">—</div></div>
+            <div class="krow"><div class="kname">Rows</div><div class="kval" id="sum_rows">—</div></div>
+            <div class="krow"><div class="kname">MAE</div><div class="kval" id="sum_mae">—</div></div>
+            <div class="krow"><div class="kname">Global</div><div class="kval" id="sum_global">—</div></div>
+            <div class="krow"><div class="kname">Selected Cut</div><div class="kval" id="sum_cut">—</div></div>
+          </div>
+        </div>
+
+        <!-- 임계값 스캔 CSV -->
+        <div class="card p-5 md:col-span-2">
+          <h3 class="mb-2">임계값 스캔 <span class="uppercase text-slate-500 text-xs">csv</span></h3>
+          <label class="dz block text-center" data-dz="fileScanCsv">
+            <input id="fileScanCsv" type="file" accept=".csv" class="sr-only">
+            <div id="fileScanCsvBox" class="dz-pill">
+              <i class="ti ti-upload mr-2"></i><span class="text-slate-500">&nbsp;threshold_metrics_with_mae.csv 업로드</span>
+            </div>
+          </label>
+
+          <div class="mt-4 flex flex-wrap items-center gap-2">
+            <label class="text-sm text-slate-700 flex items-center gap-1">
+              <input id="chkOnlyRecommended" type="checkbox" class="rounded border-slate-300">
+              추천안만 보기
+            </label>
+            <label class="text-sm text-slate-700 flex items-center gap-1">
+              정렬:
+              <select id="selSort" class="border rounded px-2 py-1 text-sm">
+                <option value="Composite:desc">Composite ⬇</option>
+                <option value="F1:desc">F1 ⬇</option>
+                <option value="Recall:desc">Recall ⬇</option>
+                <option value="FPR:asc">FPR ⬆</option>
+                <option value="Accuracy:desc">Accuracy ⬇</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="overflow-x-auto mt-3">
+            <table class="tbl min-w-[900px]">
+              <thead>
+                <tr>
+                  <th>Percentile</th><th>Threshold</th><th>FPR</th><th>Recall</th>
+                  <th>F1</th><th>Specificity</th><th>Accuracy</th><th>Composite</th>
+                </tr>
+              </thead>
+              <tbody id="scanCsvBody"></tbody>
+            </table>
+          </div>
+          <div id="statusScan" class="mt-3 text-xs text-slate-700"></div>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <button id="btnReset" class="pill" type="button"><i class="ti ti-refresh mr-1"></i>초기화</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== 추천 전략 요약(복원) ====================== -->
+  <section id="summary" class="py-10">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="section-title subtle text-2xl md:text-3xl mb-4" style="color:#fff;">추천 임계값 요약</h2>
+
+      <div class="flex gap-3 mb-4">
+        <button class="tab-btn2 active" data-tab="conservative">보수형</button>
+        <button class="tab-btn2" data-tab="balanced">균형형</button>
+        <button class="tab-btn2" data-tab="riskfirst">탐지우선형</button>
+      </div>
+
+      <div class="summary-panel">
+        <!-- 보수형 -->
+        <div id="tab-conservative2" class="tab-panel2">
+          <div class="krow"><div class="kname">전체 지표 수준</div>
+            <div class="kval"><span id="conservative_overall" class="kpi-val">—</span></div></div>
+          <div class="krow"><div class="kname" style="color:#000;">추천 퍼센타일(임계값)</div>
+            <div class="kval" style="color:#000;"><span id="conservative_policy" class="kpi-val">—</span> <span class="sub">민감 데이터/공개 심사용</span></div></div>
+          <div class="krow"><div class="kname">FPR</div>
+            <div class="kval"><span id="conservative_fpr" class="kpi-val">—</span> <span class="sub">거짓양성률</span></div></div>
+          <div class="krow"><div class="kname">Recall</div>
+            <div class="kval"><span id="conservative_recall" class="kpi-val">—</span> <span class="sub">탐지율</span></div></div>
+          <div class="krow"><div class="kname">F1</div>
+            <div class="kval"><span id="conservative_f1" class="kpi-val">—</span> <span class="sub">균형 평균</span></div></div>
+          <div class="krow"><div class="kname">MAE</div>
+            <div class="kval"><span id="conservative_mae" class="kpi-val">—</span> <span class="sub">절대 평균 오차</span></div></div>
+        </div>
+
+        <!-- 균형형 -->
+        <div id="tab-balanced2" class="tab-panel2 hidden">
+          <div class="krow"><div class="kname">전체 지표 수준</div><div class="kval"><span id="balanced_overall" class="kpi-val">—</span></div></div>
+          <div class="krow"><div class="kname" style="color:#000;">추천 퍼센타일(임계값)</div><div class="kval" style="color:#000;"><span id="balanced_policy" class="kpi-val">—</span> <span class="sub">일반 공유/분석 기본값</span></div></div>
+          <div class="krow"><div class="kname">FPR</div><div class="kval"><span id="balanced_fpr" class="kpi-val">—</span> <span class="sub">거짓양성률</span></div></div>
+          <div class="krow"><div class="kname">Recall</div><div class="kval"><span id="balanced_recall" class="kpi-val">—</span> <span class="sub">탐지율</span></div></div>
+          <div class="krow"><div class="kname">F1</div><div class="kval"><span id="balanced_f1" class="kpi-val">—</span> <span class="sub">균형 평균</span></div></div>
+          <div class="krow"><div class="kname">MAE</div><div class="kval"><span id="balanced_mae" class="kpi-val">—</span> <span class="sub">절대 평균 오차</span></div></div>
+        </div>
+
+        <!-- 탐지우선형 -->
+        <div id="tab-riskfirst2" class="tab-panel2 hidden">
+          <div class="krow"><div class="kname">전체 지표 수준</div><div class="kval"><span id="riskfirst_overall" class="kpi-val">—</span></div></div>
+          <div class="krow"><div class="kname" style="color:#000;">추천 퍼센타일(임계값)</div><div class="kval" style="color:#000;"><span id="riskfirst_policy" class="kpi-val">—</span> <span class="sub">모니터링/탐지용</span></div></div>
+          <div class="krow"><div class="kname">FPR</div><div class="kval"><span id="riskfirst_fpr" class="kpi-val">—</span> <span class="sub">거짓양성률</span></div></div>
+          <div class="krow"><div class="kname">Recall</div><div class="kval"><span id="riskfirst_recall" class="kpi-val">—</span> <span class="sub">탐지율</span></div></div>
+          <div class="krow"><div class="kname">F1</div><div class="kval"><span id="riskfirst_f1" class="kpi-val">—</span> <span class="sub">균형 평균</span></div></div>
+          <div class="krow"><div class="kname">MAE</div><div class="kval"><span id="riskfirst_mae" class="kpi-val">—</span> <span class="sub">절대 평균 오차</span></div></div>
+        </div>
+      </div>
+
+      <div id="compareWrap" class="mt-2 hidden">
+        <div class="overflow-x-auto">
+          <table class="tbl min-w-[720px]">
+            <thead>
+              <tr><th>항목</th><th>보수형</th><th>균형형</th><th>탐지우선형</th></tr>
+            </thead>
+            <tbody id="compareBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 위험 상위 테이블 출력 영역 -->
+  <section id="viz" class="py-10">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="section-title subtle text-2xl md:text-3xl mb-4" style="color:#fff;">조합별 분석 현황</h2>
+      <div class="card p-5">
+        <h3 class="mb-2">위험 상위 테이블</h3>
+        <div class="overflow-x-auto">
+          <table class="tbl min-w-[420px]">
+            <thead><tr><th>Feature</th><th>Importance</th></tr></thead>
+            <tbody id="topFeatBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 자동 시각화 -->
+  <section id="autoCharts" class="py-10">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="section-title subtle text-2xl md:text-3xl mb-4" style="color:#fff;">자동 시각화 (임계값 스캔 CSV 기반)</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="card p-5">
+          <h3 class="mb-2">ROC (TPR vs FPR)</h3>
+          <canvas id="rocCanvas" height="240"></canvas>
+          <div id="rocStatus" class="text-xs text-slate-600 mt-2"></div>
+        </div>
+        <div class="card p-5">
+          <h3 class="mb-2">지표 추이 (Percentile/Threshold)</h3>
+          <canvas id="metricsCanvas" height="240"></canvas>
+          <div id="metricsStatus" class="text-xs text-slate-600 mt-2"></div>
+        </div>
+        <div class="card p-5">
+          <h3 class="mb-2">Pareto (Recall vs FPR)</h3>
+          <canvas id="paretoCanvas" height="240"></canvas>
+          <div id="paretoStatus" class="text-xs text-slate-600 mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cf" class="py-10">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="section-title subtle text-2xl md:text-3xl mb-4" style="color:#fff;">Counterfactual 요약</h2>
+    <div class="card p-5">
+      <div class="mb-3">
+        <label class="dz block text-center" data-dz="fileCF">
+          <input id="fileCF" type="file" accept=".json,application/json" class="sr-only">
+          <div id="fileCFBox" class="dz-pill">
+            <i class="ti ti-upload mr-2"></i>counterfactual_row0.json 업로드
+          </div>
+        </label>
+      </div>
+      <div id="cfWrap" class="grid md:grid-cols-2 gap-4 hidden">
+        <div class="bg-white rounded-xl p-4">
+          <h4 class="font-semibold mb-2">Before</h4>
+          <div class="text-sm text-slate-700">
+            <div>y_score: <b id="cfBeforeScore">—</b></div>
+            <div>pred: <b id="cfBeforePred">—</b></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl p-4">
+          <h4 class="font-semibold mb-2">After</h4>
+          <div class="text-sm text-slate-700">
+            <div>y_score: <b id="cfAfterScore">—</b></div>
+            <div>pred: <b id="cfAfterPred">—</b></div>
+          </div>
+        </div>
+        <div class="md:col-span-2 bg-white rounded-xl p-4">
+          <h4 class="font-semibold mb-2">변경된 Feature</h4>
+          <table class="tbl min-w-[420px]">
+            <thead><tr><th>Feature</th><th>Before</th><th>After</th></tr></thead>
+            <tbody id="cfChanges"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- JSZip -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="zip-bridge.js"></script>
+
+  <script>
+    /* ===== Toast ===== */
+    async function autoInjectZipFromBridge(){
+      if(!window.ZipBridge) return;
+      try{
+        const stored = await ZipBridge.load();
+        if(!stored?.blob) return;
+        const input = document.getElementById('fileBundleZip');
+        if(!input || input.files?.length) return;
+        const file = new File([stored.blob], stored.name || 'bundle.zip', {
+          type: 'application/zip',
+          lastModified: stored.lastModified || Date.now()
+        });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+      }catch(err){
+        console.warn('Zip auto-inject failed', err);
+      }
+    }
+    const toastBox=document.getElementById('toast');
+    function showToast(msg, kind='error'){
+      const box=toastBox.querySelector('div');
+      box.textContent=msg;
+      box.className='px-4 py-2 rounded-lg text-sm shadow border '+
+        (kind==='ok'?'bg-emerald-50 text-emerald-700 border-emerald-200':'bg-rose-50 text-rose-700 border-rose-200');
+      toastBox.classList.remove('hidden'); setTimeout(()=>toastBox.classList.add('hidden'),2200);
+    }
+
+    /* ===== Upload helper ===== */
+    function setupDrop(fileId, labelText, kind='file'){
+      const input = document.getElementById(fileId);
+      const zone  = document.querySelector(`[data-dz="${fileId}"]`);
+      const box   = document.getElementById(`${fileId}Box`);
+      if(!input || !zone || !box){ console.error('setupDrop error:', fileId); return; }
+
+      const initialHTML = box.innerHTML;
+      const placeholderHTML = (labelText!=null && labelText!=='')
+        ? `<i class="ti ti-upload mr-2"></i>${labelText}`  // 호출부에서 문구 주면 그걸 사용
+        : initialHTML; 
+      const chip = (name, ext) => `
+        <span class="dz-filechip">
+          <i class="ti ${ext==='csv'?'ti-file-spreadsheet': ext==='json'?'ti-file-code': ext==='folder'?'ti-folder': 'ti-file'}"></i>${name}
+          <button type="button" data-clear class="ml-1 text-slate-700/70 hover:text-slate-900"><i class="ti ti-x"></i></button>
+        </span>`;
+      function reset(){
+        box.className='dz-pill';
+        if(labelText){ box.classList.add('text-slate-500'); }
+        box.innerHTML = placeholderHTML;
+      }
+      function update(){
+        if(!input.files?.length){ reset(); return; }
+        const f = input.files[0];
+        const name = f?.webkitRelativePath || f?.name || '선택됨';
+        let ext='file'; if(kind==='csv') ext='csv'; else if(kind==='json') ext='json'; else if(kind==='folder') ext='folder';
+        box.className=''; box.innerHTML = chip(name, ext);
+        box.querySelector('[data-clear]')?.addEventListener('click', ()=>{
+          input.value=''; input.dispatchEvent(new Event('change'));
+          if(fileId==='fileScanCsv')document.getElementById('statusScan').innerHTML='';
+        });
+      }
+      ['dragenter','dragover'].forEach(ev => zone.addEventListener(ev, (e)=>{ e.preventDefault(); zone.classList.add('dz-hl'); }));
+      ['dragleave','drop'].forEach(ev => zone.addEventListener(ev, (e)=>{ e.preventDefault(); zone.classList.remove('dz-hl'); }));
+      zone.addEventListener('drop', (e)=>{ e.preventDefault(); if(e.dataTransfer?.files?.length){ input.files = e.dataTransfer.files; input.dispatchEvent(new Event('change')); } });
+      input.addEventListener('change', update);
+      reset();
+    }
+
+    /* ===== CSV/JSON Readers ===== */
+    function toNumSafe(v){
+      if (v==null) return NaN;
+      const s = String(v).trim().replace(/\s+/g,'').replace(/,/g,'');
+      const n = +s;
+      return Number.isFinite(n) ? n : NaN;
+    }
+    function parseCSV(text){
+      const firstLine = (text.split(/\r?\n/)[0] || '');
+      const cand = [',',';','\t']; let delim = ',', best = 0;
+      for (const d of cand){ const c = (firstLine.match(new RegExp('\\'+d,'g'))||[]).length; if(c>best){best=c;delim=d;} }
+      const rows=[]; let i=0,cur='',inQ=false,row=[];
+      const pushCell=()=>{row.push(cur);cur='';}; const pushRow=()=>{rows.push(row);row=[];};
+      while(i<text.length){
+        const ch=text[i];
+        if(inQ){ if(ch==='"' && text[i+1]==='"'){cur+='"';i+=2;continue;}
+                 if(ch==='"'){inQ=false;i++;continue;}
+                 cur+=ch;i++;continue; }
+        if(ch==='"'){inQ=true;i++;continue;}
+        if(ch===delim){pushCell();i++;continue;}
+        if(ch==='\n'){pushCell();pushRow();i++;continue;}
+        if(ch==='\r'){i++;continue;}
+        cur+=ch;i++;
+      }
+      pushCell(); if(row.length>1 || row[0]!=='' ) pushRow();
+      if(rows.length===0) return {header:[], rows:[]};
+      const header=rows[0].map(h=> String(h||'').trim());
+      const dataRows=rows.slice(1).map(r=>{ const obj={}; header.forEach((h,idx)=> obj[h]=(r[idx]??'').trim()); return obj; });
+      return {header, rows:dataRows};
+    }
+    async function readCsvFile(inputEl){
+      return new Promise((resolve,reject)=>{
+        const f=inputEl.files?.[0]; if(!f){ resolve(null); return; }
+        const r=new FileReader(); r.onerror=()=>reject(new Error('CSV 읽기 실패'));
+        r.onload=()=>{ try{ resolve(parseCSV(String(r.result))); }catch(e){ reject(e); } };
+        r.readAsText(f,'utf-8');
+      });
+    }
+    async function readJSONFile(inputEl){
+      return new Promise((resolve,reject)=>{
+        const f=inputEl.files?.[0]; if(!f){ resolve(null); return; }
+        const r=new FileReader(); r.onerror=()=>reject(new Error('JSON 읽기 실패'));
+        r.onload=()=>{ try{ resolve(JSON.parse(r.result)); }catch(e){ reject(e); } };
+        r.readAsText(f,'utf-8');
+      });
+    }
+
+    /* ===== 업로드 존 바인딩 ===== */
+    setupDrop('fileBundleZip', null,'zip');
+    setupDrop('fileRisk', 'feature_statistics_with_strategy.csv 업로드','csv');
+    setupDrop('fileTopFeat', null,'csv');
+    setupDrop('fileIntegrated', null,'csv');
+    setupDrop('fileRecCards', null,'json');
+    setupDrop('fileSummary', null,'json');
+    setupDrop('fileScanCsv', null,'csv');
+    setupDrop('fileCF', null,'json');
+
+    // ===== ZIP 번들 처리 =====
+    function guessMime(name){
+      try{
+        const ext = String(name).split('.').pop().toLowerCase();
+        if(ext==='csv') return 'text/csv';
+        if(ext==='json') return 'application/json';
+        if(ext==='zip') return 'application/zip';
+      }catch(_){}
+      return 'application/octet-stream';
+    }
+    async function fillInputFromBlob(targetId, name, blob){
+      const file = new File([blob], name, {type: guessMime(name)});
+      const dt = new DataTransfer(); dt.items.add(file);
+      const el = document.getElementById(targetId);
+      if(el){ el.files = dt.files; el.dispatchEvent(new Event('change')); }
+    }
+    document.getElementById('fileBundleZip')?.addEventListener('change', async (e)=>{
+      const statusEl = document.getElementById('bundleStatus');
+      statusEl.textContent='';
+      const f = e.target.files?.[0]; if(!f) return;
+      try{
+        const zip = await JSZip.loadAsync(f);
+        const fileNames = Object.keys(zip.files).filter(k=>!zip.files[k].dir);
+        const mapping = {
+          'xai_feature_importance.csv':'fileTopFeat',
+          'integrated_risk_score.csv':'fileIntegrated',
+          'feature_statistics_with_strategy.csv':'fileRisk',
+          'recommendation_cards.json':'fileRecCards',
+          'vector_risk_summary.json':'fileSummary',
+          'threshold_metrics_with_mae.csv':'fileScanCsv',
+          'counterfactual_row0.json':'fileCF'
+        };
+        const found=[];
+        for(const [name,target] of Object.entries(mapping)){
+          const key = fileNames.find(k=> k.toLowerCase().endsWith(name.toLowerCase()));
+          if(key){
+            const blob = await zip.files[key].async('blob');
+            await fillInputFromBlob(target, name, blob);
+            found.push(name);
+          }
+        }
+        statusEl.textContent = `ZIP에서 ${fileNames.length}개 파일 감지: ${fileNames.join(', ')}`;
+        showToast('일괄 업로드 ZIP 처리 완료','ok');
+      }catch(err){
+        console.error(err);
+        showToast('ZIP 처리 실패');
+      }
+    });
+
+    /* ===== 탭 스위칭(요약) ===== */
+    (function(){
+      const tabButtons2 = document.querySelectorAll('.tab-btn2');
+      const tabPanels2  = document.querySelectorAll('.tab-panel2');
+      tabButtons2.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          tabButtons2.forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          const key=btn.dataset.tab;
+          tabPanels2.forEach(p=>p.classList.add('hidden'));
+          document.getElementById(`tab-${key}2`).classList.remove('hidden');
+        });
+      });
+    })();
+
+    // 요청: "전체 지표 수준" 줄 삭제 (요약 3탭)
+    (function(){
+      document.querySelectorAll('#conservative_overall,#balanced_overall,#riskfirst_overall')
+        .forEach(el=> el.closest('.krow')?.remove());
+    })();
+
+    // 요청: 로드 섹션의 설명 문구 제거
+    (function(){
+      const p=document.querySelector('#load p.text-sm.text-slate-600.mt-1');
+      if(p) p.remove();
+    })();
+
+    // 요청: 제목 변경 - "조합별 분석 현황" → "특성별 분석 현황"
+    (function(){
+      const h2 = document.querySelector('#viz h2.section-title');
+      if(h2 && /조합/.test(h2.textContent||'')){
+        h2.textContent = '특성별 분석 현황';
+      }
+    })();
+
+    // Pareto 보강 함수: 현재 차트의 모든 점에서 프론티어를 계산해 시각화 개선
+    function enhancePareto(){
+      try{
+        if(!paretoChart) return;
+        const pts = (paretoChart.data?.datasets?.[0]?.data || []).filter(d=> Number.isFinite(d.x) && Number.isFinite(d.y));
+        if(!pts.length) return;
+        const ordered = pts.slice().sort((a,b)=> (a.x-b.x)||(b.y-a.y));
+        const frontier=[]; let best=-Infinity; for(const p of ordered){ if(p.y>best){ frontier.push(p); best=p.y; } }
+        // 동적 X 범위 (데이터가 모두 0 근처면 확대)
+        const maxX = pts.reduce((m,p)=> Math.max(m,p.x), 0);
+        const xMax = Math.min(1, maxX>0 ? maxX*1.05 : 1);
+        // 데이터셋 갱신 및 스타일
+        paretoChart.data.datasets = [
+          { label:'All', data:pts, backgroundColor:'#60a5fa', borderColor:'#60a5fa', pointRadius:3 },
+          { label:'Pareto frontier', data:frontier, showLine:true, backgroundColor:'#fda4af', borderColor:'#f472b6', pointRadius:4 }
+        ];
+        if(paretoChart.options?.scales?.x){ paretoChart.options.scales.x.min=0; paretoChart.options.scales.x.max=xMax; }
+        if(!paretoChart.options.plugins) paretoChart.options.plugins={};
+        paretoChart.options.plugins.tooltip={ callbacks:{ label:(ctx)=>{
+          const d=ctx.raw||{}; const x=(d.x??ctx.parsed.x).toFixed(3); const y=(d.y??ctx.parsed.y).toFixed(3);
+          return `(${x}, ${y})`;
+        } } };
+        document.getElementById('paretoStatus').textContent = `전체 ${pts.length} · 프론티어 ${frontier.length}`;
+        paretoChart.update();
+      }catch(err){ console.warn('enhancePareto failed', err); }
+    }
+
+    /* ===== 추천 전략 요약 바인딩 ===== */
+    function bindStrategyResults(strategyResults){
+      const pct = x => (x==null || isNaN(x)) ? '—' : (x*100).toFixed(2)+'%';
+      const num = (x,d=3) => (x==null || isNaN(+x)) ? '—' : (+x).toFixed(d);
+      const fill = (k) =>{
+        const s=strategyResults?.[k]||{}; const m=s.metrics||{};
+        const set=(id,val)=>{ const el=document.getElementById(`${k}_${id}`); if(el) el.textContent=val; };
+        set('overall', s.overallLevel ?? '—');
+        set('policy', s.policyCut ?? '—');
+        set('fpr',    m.fpr!=null ? pct(m.fpr) : '—');
+        set('recall', m.recall!=null ? pct(m.recall) : '—');
+        set('f1',     m.f1!=null ? num(m.f1,3) : '—');
+        set('mae',    m.mae!=null ? num(m.mae,2) : '—');
+      };
+      ['conservative','balanced','riskfirst'].forEach(fill);
+    }
+    function cardsToStrategyResults(recCards, summary){
+      const byType={}; for(const c of recCards||[]){ const key=(c.type==='recall_first')?'riskfirst':c.type; byType[key]=c; }
+      const overallMAE=summary?.overall_mae;
+      const levelOf=(fpr)=> (fpr!=null && overallMAE!=null && fpr<=0.005 && overallMAE<=0.20) ? '안전' :
+                             (fpr!=null && overallMAE!=null && fpr<=0.020 && overallMAE<=0.30) ? '적정' : '위험';
+      const policyCut=(row)=> row ? `P${row.percentile} (${(+row.threshold).toFixed(2)})` : '—';
+      return {
+        conservative: byType.conservative ? { overallLevel:levelOf(byType.conservative.FPR), policyCut:policyCut(byType.conservative),
+          metrics:{ fpr:byType.conservative.FPR, recall:byType.conservative.Recall, f1:byType.conservative.F1, mae:overallMAE } } : {},
+        balanced: byType.balanced ? { overallLevel:levelOf(byType.balanced.FPR), policyCut:policyCut(byType.balanced),
+          metrics:{ fpr:byType.balanced.FPR, recall:byType.balanced.Recall, f1:byType.balanced.F1, mae:overallMAE } } : {},
+        riskfirst: byType.riskfirst ? { overallLevel:levelOf(byType.riskfirst.FPR), policyCut:policyCut(byType.riskfirst),
+          metrics:{ fpr:byType.riskfirst.FPR, recall:byType.riskfirst.Recall, f1:byType.riskfirst.F1, mae:overallMAE } } : {}
+      };
+    }
+    function renderComparisonTable(mapped){
+      const wrap = document.getElementById('compareWrap');
+      const body = document.getElementById('compareBody');
+      body.innerHTML = '';
+      if (!mapped || !mapped.conservative?.metrics) { wrap.classList.add('hidden'); return; }
+
+      const rows = [
+        ['전체 지표 수준', mapped.conservative.overallLevel ?? '—', mapped.balanced?.overallLevel ?? '—', mapped.riskfirst?.overallLevel ?? '—', 'text'],
+        ['추천 퍼센타일(임계값)', mapped.conservative.policyCut ?? '—', mapped.balanced?.policyCut ?? '—', mapped.riskfirst?.policyCut ?? '—', 'text'],
+        ['FPR',    mapped.conservative.metrics?.fpr,    mapped.balanced?.metrics?.fpr,    mapped.riskfirst?.metrics?.fpr,    'min'],
+        ['Recall', mapped.conservative.metrics?.recall, mapped.balanced?.metrics?.recall, mapped.riskfirst?.metrics?.recall, 'max'],
+        ['F1',     mapped.conservative.metrics?.f1,     mapped.balanced?.metrics?.f1,     mapped.riskfirst?.metrics?.f1,     'max'],
+        ['MAE',    mapped.conservative.metrics?.mae,    mapped.balanced?.metrics?.mae,    mapped.riskfirst?.metrics?.mae,    'min'],
+      ];
+      const fmt = (name, val) => (val==null || val==='—') ? '—' :
+        (name==='FPR' || name==='Recall') ? (val*100).toFixed(2)+'%' :
+        (name==='F1') ? (+val).toFixed(3) :
+        (name==='MAE') ? (+val).toFixed(2) : String(val);
+
+        rows.forEach(r=>{
+          const [name,a0,b0,c0,type]=r;
+          let a=a0,b=b0,c=c0;
+        if(type==='max' || type==='min'){
+          const vals=[a,b,c].map(v=> (typeof v==='number' && !isNaN(v)) ? v : null);
+          const goal = (type==='max')
+            ? Math.max(...vals.filter(v=>v!=null))
+            : Math.min(...vals.filter(v=>v!=null));
+          const badge = (v,txt)=> (v!=null && v===goal)
+            ? `<span class="inline-block bg-emerald-50 text-emerald-700 rounded px-2 py-0.5">${txt}</span>` : txt;
+          a = badge(vals[0], fmt(name,a));
+          b = badge(vals[1], fmt(name,b));
+          c = badge(vals[2], fmt(name,c));
+        }else{
+          a = fmt(name,a); b = fmt(name,b); c = fmt(name,c);
+        }
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="font-semibold">${name}</td><td>${a}</td><td>${b}</td><td>${c}</td>`;
+        if(name.includes('추천 퍼센타일')){ tr.style.color = '#000'; }
+        body.appendChild(tr);
+      });
+      // 전체 지표 수준 행 제거(요청에 따라 숨김 처리)
+      body.querySelector('tr')?.remove();
+      wrap.classList.remove('hidden');
+    }
+    async function tryBindFromUploads(){
+      try{
+        const [recCards, summary] = await Promise.all([
+          readJSONFile(document.getElementById('fileRecCards')),
+          readJSONFile(document.getElementById('fileSummary'))
+        ]);
+        if(recCards && summary){
+          const mapped = cardsToStrategyResults(recCards, summary);
+          bindStrategyResults(mapped);
+          renderComparisonTable(mapped);
+
+          // 추천 퍼센타일을 스캔 테이블 필터에도 반영
+          recommendedPercentiles=new Set((recCards||[]).map(c=> +c.percentile));
+          const csvInput=document.getElementById('fileScanCsv');
+          if(csvInput?.files?.length){
+            const parsed=await readCsvFile(csvInput);
+            if(parsed) { renderScanCsv(parsed); enhancePareto(); }
+          }
+        } else {
+          renderComparisonTable(null);
+        }
+      }catch(e){ showToast('추천/요약 JSON 파싱 실패'); console.error(e); }
+    }
+    ['fileRecCards','fileSummary'].forEach(id=>{
+      document.getElementById(id)?.addEventListener('change', tryBindFromUploads);
+    });
+
+    /* ======== 이하: 임계값 스캔/차트/위험상위/CF/리셋 ======== */
+
+    let recommendedPercentiles=new Set();
+    let rocChart=null, metricsChart=null, paretoChart=null;
+
+    const pick = (obj, ...cands) => {
+      for(const k of cands){
+        if(obj && k in obj) return obj[k];
+        const low = obj ? Object.keys(obj).find(h=>h.toLowerCase()===String(k).toLowerCase()) : null;
+        if(low) return obj[low];
+      }
+      return undefined;
+    };
+
+    function updateChartStatusEmpty(){
+      document.getElementById('rocStatus').textContent      = 'CSV를 업로드하면 자동으로 그려집니다.';
+      document.getElementById('metricsStatus').textContent  = 'CSV를 업로드하면 자동으로 그려집니다.';
+      document.getElementById('paretoStatus').textContent   = 'CSV를 업로드하면 자동으로 그려집니다.';
+      destroyCharts();
+    }
+    function destroyCharts(){
+      if(rocChart){ rocChart.destroy(); rocChart=null; }
+      if(metricsChart){ metricsChart.destroy(); metricsChart=null; }
+      if(paretoChart){ paretoChart.destroy(); paretoChart=null; }
+    }
+
+    function renderScanCsv(parsed){
+      const body=document.getElementById('scanCsvBody');
+      body.innerHTML='';
+      if(!parsed || !parsed.rows?.length){ updateChartStatusEmpty(); return; }
+
+      const hasComp = parsed.header.some(h=>/^Composite$/i.test(h));
+      if(!hasComp){ const sel=document.getElementById('selSort'); if(sel.value.startsWith('Composite')) sel.value='F1:desc'; }
+
+      let rows=parsed.rows.map(row=>({
+        percentile:+pick(row,'percentile','Percentile'),
+        threshold:+pick(row,'threshold','Threshold'),
+        FPR:+pick(row,'FPR','FalsePositiveRate'),
+        Recall:+pick(row,'Recall','TPR','TruePositiveRate','Sensitivity'),
+        F1:+pick(row,'F1','f1'),
+        Specificity:+pick(row,'Specificity','TNR'),
+        Accuracy:+pick(row,'Accuracy','ACC'),
+        Composite: hasComp ? +pick(row,'Composite') : NaN,
+        PSI:+pick(row,'PSI','psi','PopulationStabilityIndex')
+      })).filter(r=>!Number.isNaN(r.percentile) || !Number.isNaN(r.threshold));
+
+      const only=document.getElementById('chkOnlyRecommended').checked;
+      if(only && recommendedPercentiles.size){ rows=rows.filter(r=>recommendedPercentiles.has(r.percentile)); }
+      const [col,dir]=document.getElementById('selSort').value.split(':');
+      rows.sort((a,b)=> dir==='desc' ? ((b[col]??-Infinity)-(a[col]??-Infinity))
+                                     : ((a[col]??Infinity)-(b[col]??Infinity)));
+
+      const pct=v=> (isFinite(v)?(v*100).toFixed(2)+'%':'—');
+      const num=(v,d=3)=> (isFinite(v)?v.toFixed(d):'—');
+      rows.forEach(r=>{
+        const tr=document.createElement('tr');
+        const isRec=recommendedPercentiles.has(r.percentile);
+        const tag=isRec?'<span class="text-emerald-700 text-xs font-semibold bg-emerald-50 rounded px-2 py-0.5">추천</span>':'';
+        tr.innerHTML=`
+          <td class="font-semibold">${r.percentile ?? '—'} ${tag}</td>
+          <td>${num(r.threshold,2)}</td>
+          <td>${pct(r.FPR)}</td>
+          <td>${pct(r.Recall)}</td>
+          <td>${num(r.F1,3)}</td>
+          <td>${pct(r.Specificity)}</td>
+          <td>${num(r.Accuracy,3)}</td>
+          <td>${num(r.Composite,3)}</td>`;
+        if(isRec) tr.classList.add('bg-indigo-50/40');
+        body.appendChild(tr);
+      });
+
+      document.getElementById('statusScan').innerHTML=
+        `행: <b>${rows.length}</b> · 컬럼: <b>${parsed.header.length}</b>${hasComp?'':' · <span class="text-amber-600">Composite 없음</span>'}`;
+
+      renderChartsFromScan(parsed);
+    }
+
+    function renderChartsFromScan(parsed){
+      const base = parsed.rows.map(r=>({
+        percentile:+pick(r,'percentile','Percentile'),
+        threshold :+pick(r,'threshold','Threshold'),
+        FPR       :+pick(r,'FPR','FalsePositiveRate'),
+        TPR       :+pick(r,'TPR','TruePositiveRate','Recall','Sensitivity'),
+        Recall    :+pick(r,'Recall','TPR','TruePositiveRate','Sensitivity'),
+        F1        :+pick(r,'F1'),
+        Accuracy  :+pick(r,'Accuracy','ACC'),
+        Specificity:+pick(r,'Specificity','TNR'),
+        PSI       :+pick(r,'PSI','psi','PopulationStabilityIndex')
+      }));
+      const sorted = base.slice().sort((a,b)=>{
+        const ap = isFinite(a.percentile), bp=isFinite(b.percentile);
+        if(ap && bp) return a.percentile - b.percentile;
+        if(ap) return -1; if(bp) return 1;
+        return (a.threshold||0) - (b.threshold||0);
+      });
+
+      const labels = sorted.map(r=> isFinite(r.percentile) ? `P${r.percentile}` :
+                                  (isFinite(r.threshold) ? r.threshold.toFixed(2) : ''));
+      const FPRs   = sorted.map(r=> isFinite(r.FPR)? r.FPR : null);
+      const TPRs   = sorted.map(r=> isFinite(r.TPR)? r.TPR : (isFinite(r.Recall)? r.Recall : null));
+      const F1s    = sorted.map(r=> isFinite(r.F1)? r.F1 : null);
+      const ACCs   = sorted.map(r=> isFinite(r.Accuracy)? r.Accuracy : null);
+      const SPECs  = sorted.map(r=> isFinite(r.Specificity)? r.Specificity : null);
+
+      // ROC
+      const rocX=[], rocY=[];
+      for(let i=0;i<sorted.length;i++){
+        if(isFinite(FPRs[i]) && isFinite(TPRs[i])){ rocX.push(FPRs[i]); rocY.push(TPRs[i]); }
+      }
+      const rocCtx = document.getElementById('rocCanvas').getContext('2d');
+      if(rocChart) rocChart.destroy();
+      rocChart = new Chart(rocCtx, {
+        type:'line',
+        data:{ labels: rocX, datasets:[{ label:'ROC (TPR vs FPR)', data: rocY }] },
+        options:{ scales:{ x:{ title:{display:true, text:'FPR'}, min:0, max:1 }, y:{ title:{display:true, text:'TPR'}, min:0, max:1 } },
+                  elements:{ point:{ radius:0 } } }
+      });
+      document.getElementById('rocStatus').textContent = `${rocX.length} 포인트`;
+
+      // Metrics lines
+      const ds=[];
+      if(FPRs.some(Number.isFinite))  ds.push({label:'FPR', data:FPRs});
+      if(TPRs.some(Number.isFinite))  ds.push({label:'Recall/TPR', data:TPRs});
+      if(F1s.some(Number.isFinite))   ds.push({label:'F1', data:F1s});
+      if(ACCs.some(Number.isFinite))  ds.push({label:'Accuracy', data:ACCs});
+      if(SPECs.some(Number.isFinite)) ds.push({label:'Specificity', data:SPECs});
+      const metCtx = document.getElementById('metricsCanvas').getContext('2d');
+      if(metricsChart) metricsChart.destroy();
+      metricsChart = new Chart(metCtx, {
+        type:'line',
+        data:{ labels, datasets: ds.map(d=>({ ...d })) },
+        options:{ interaction:{ mode:'index', intersect:false }, scales:{ y:{ min:0, max:1 } }, elements:{ point:{ radius:0 } } }
+      });
+      document.getElementById('metricsStatus').textContent = `시리즈: ${ds.length} · 포인트: ${labels.length}`;
+
+      // Pareto
+      const pts=[]; for(let i=0;i<sorted.length;i++){ const x=FPRs[i], y=TPRs[i]; if(isFinite(x)&&isFinite(y)) pts.push({x,y}); }
+      const frontier=[]; const ptsSorted = pts.slice().sort((a,b)=> a.x - b.x || b.y - a.y);
+      let bestY = -Infinity; for(const p of ptsSorted){ if(p.y > bestY){ frontier.push(p); bestY = p.y; } }
+      const parCtx = document.getElementById('paretoCanvas').getContext('2d');
+      if(paretoChart) paretoChart.destroy();
+      paretoChart = new Chart(parCtx, {
+        type:'scatter',
+        data:{ datasets:[ {label:'All', data:pts}, {label:'Pareto frontier', data:frontier} ] },
+        options:{ scales:{ x:{ title:{display:true, text:'FPR'}, min:0, max:1 }, y:{ title:{display:true, text:'Recall'}, min:0, max:1 } } }
+      });
+      document.getElementById('paretoStatus').textContent = `전체 ${pts.length} · 프론티어 ${frontier.length}`;
+    }
+
+    document.getElementById('fileScanCsv')?.addEventListener('change', async (e)=>{
+      try{
+        const parsed=await readCsvFile(e.target);
+        if(!parsed){ updateChartStatusEmpty(); return; }
+        renderScanCsv(parsed);
+        enhancePareto();
+        showToast('임계값 CSV 로드 & 차트 생성 완료','ok');
+      }catch(err){ showToast('임계값 CSV 파싱 실패'); console.error(err); }
+    });
+
+    async function updateRecommendedSetFromJson(){
+      const recCards=await readJSONFile(document.getElementById('fileRecCards'));
+      recommendedPercentiles=new Set((recCards||[]).map(c=> +c.percentile));
+      const csvInput=document.getElementById('fileScanCsv');
+      if(csvInput?.files?.length){ const parsed=await readCsvFile(csvInput); renderScanCsv(parsed); enhancePareto(); }
+    }
+    document.getElementById('fileRecCards')?.addEventListener('change', updateRecommendedSetFromJson);
+    document.getElementById('chkOnlyRecommended')?.addEventListener('change', async ()=>{
+      const csvInput=document.getElementById('fileScanCsv'); if(csvInput?.files?.length){ const parsed=await readCsvFile(csvInput); renderScanCsv(parsed); enhancePareto(); }
+    });
+    document.getElementById('selSort')?.addEventListener('change', async ()=>{
+      const csvInput=document.getElementById('fileScanCsv'); if(csvInput?.files?.length){ const parsed=await readCsvFile(csvInput); renderScanCsv(parsed); enhancePareto(); }
+    });
+
+    /* ===== 위험 상위 테이블 ===== */
+    function renderTopFeatures(parsed){
+      const body = document.getElementById('topFeatBody');
+      body.innerHTML = '';
+      if(!parsed || !parsed.rows?.length){
+        showToast('위험 상위 CSV가 비어있습니다.');
+        return;
+      }
+      const norm = s => String(s||'').toLowerCase().replace(/[\s_]+/g,'');
+      const headers = parsed.header.map(h=>({raw:h, key:norm(h)}));
+
+      const featKeys = new Set(['feature','name','featurename','variable','column','field']);
+      const impKeys  = new Set(['importance','score','gain','weight','value','coef','coefficient','importance_score']);
+
+      const findKey = (cands)=> headers.find(h=> cands.has(h.key))?.raw;
+      const featCol = findKey(featKeys);
+      const impCol  = findKey(impKeys);
+
+      if(!featCol || !impCol){
+        console.warn('Headers:', parsed.header);
+        showToast(`컬럼을 찾지 못했습니다. (필요: feature/name & importance/score 계열)`);
+        return;
+      }
+
+      const rows = parsed.rows.map(r=>{
+        const feature = r[featCol];
+        const importance = toNumSafe(r[impCol]);
+        return {feature, importance};
+      }).filter(x=> (x.feature && Number.isFinite(x.importance)));
+
+      if(!rows.length){
+        showToast('표시할 유효 행이 없습니다.');
+        return;
+      }
+
+      rows.sort((a,b)=> b.importance - a.importance);
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="font-semibold">${r.feature}</td><td>${r.importance.toFixed(3)}</td>`;
+        body.appendChild(tr);
+      });
+      showToast('위험 상위 테이블 로드 완료','ok');
+    }
+    document.getElementById('fileTopFeat')?.addEventListener('change', async (e)=>{
+      try{
+        const parsed = await readCsvFile(e.target);
+        if(parsed?.rows?.length){ renderTopFeatures(parsed); }
+        else { document.getElementById('topFeatBody').innerHTML=''; showToast('위험 상위 CSV가 비어있습니다.'); }
+      }catch(err){ showToast('위험 상위 CSV 파싱 실패'); console.error(err); }
+    });
+
+    document.getElementById('fileCF')?.addEventListener('change', async (e)=>{
+      try{
+        const json = await readJSONFile(e.target);
+        if(!json){ return; }
+        const before = json.before || json.original || {};
+        const after  = json.after  || json.cf       || {};
+        const changed= json.changed_features || json.diff || {};
+        const fmt = (v)=> (v==null || Number.isNaN(+v)) ? '—' : (+v).toFixed(4);
+
+        document.getElementById('cfBeforeScore').textContent = fmt(before.y_score ?? before.score);
+        document.getElementById('cfBeforePred').textContent  = String(before.pred ?? before.label ?? '—');
+        document.getElementById('cfAfterScore').textContent  = fmt(after.y_score ?? after.score);
+        document.getElementById('cfAfterPred').textContent   = String(after.pred ?? after.label ?? '—');
+
+        const tbody = document.getElementById('cfChanges'); 
+        tbody.innerHTML='';
+
+        if (Array.isArray(changed)){
+          changed.forEach(it=>{
+            const k = it.feature ?? it.name ?? it.key ?? '';
+            const b = it.before ?? it.prev ?? it[0];
+            const a = it.after  ?? it.next ?? it[1];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="font-semibold">${k}</td><td>${fmt(b)}</td><td>${fmt(a)}</td>`;
+            tbody.appendChild(tr);
+          });
+        } else {
+          Object.entries(changed).forEach(([k, v])=>{
+            const [b,a] = Array.isArray(v) ? v : [v?.before, v?.after];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="font-semibold">${k}</td><td>${fmt(b)}</td><td>${fmt(a)}</td>`;
+            tbody.appendChild(tr);
+          });
+        }
+
+        document.getElementById('cfWrap').classList.remove('hidden');
+        showToast('Counterfactual 로드 완료','ok');
+      }catch(err){
+        console.error(err);
+        showToast('Counterfactual JSON 파싱 실패');
+      }
+    });
+
+    /* ===== Reset ===== */
+    document.getElementById('btnReset').addEventListener('click', ()=>{
+      [
+        'fileRisk','fileRecCards','fileSummary','fileScanCsv',
+        'fileTopFeat','fileCF'
+      ].forEach(id=>{
+        const el=document.getElementById(id); if(el){ el.value=''; el.dispatchEvent(new Event('change')); }
+      });
+      document.getElementById('statusRisk').innerHTML='';
+      document.getElementById('statusScan').innerHTML='';
+      document.getElementById('topFeatBody').innerHTML='';
+      // 숨김 유지되는 summaryBox 초기화
+      document.getElementById('sum_dataset').textContent='—';
+      document.getElementById('sum_model').textContent='—';
+      document.getElementById('sum_rows').textContent='—';
+      document.getElementById('sum_mae').textContent='—';
+      document.getElementById('sum_global').textContent='—';
+      document.getElementById('sum_cut').textContent='—';
+      destroyCharts();
+      document.getElementById('rocStatus').textContent='';
+      document.getElementById('metricsStatus').textContent='';
+      document.getElementById('paretoStatus').textContent='';
+      document.getElementById('cfWrap').classList.add('hidden');
+      document.getElementById('cfChanges').innerHTML='';
+      document.getElementById('cfBeforeScore').textContent='—';
+      document.getElementById('cfBeforePred').textContent='—';
+      document.getElementById('cfAfterScore').textContent='—';
+      document.getElementById('cfAfterPred').textContent='—';
+      showToast('초기화 완료','ok');
+    });
+
+    autoInjectZipFromBridge();
+  </script>
+</body>
+</html>

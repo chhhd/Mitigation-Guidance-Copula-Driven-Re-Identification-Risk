@@ -1,0 +1,780 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>조합 분석 현황</title>
+  <!-- Pretendard -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <style>
+    :root{
+      --bg:#121212;
+      --card:#f8fafc;
+      --ink:#0f172a;
+      --muted:#6b7280;
+      --pill:#eef2ff;
+      --pill-text:#3730a3;
+      --border:#e5e7eb;
+      --table-line:#d6d9df;
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:'Pretendard',system-ui,-apple-system,sans-serif;
+      display:flex;
+      justify-content:center;
+    }
+    .page{
+      width:100%;
+      max-width:1240px;
+      padding:26px 24px 48px;
+    }
+    h1{
+      margin:0 0 16px;
+      font-size:32px;
+      font-weight:900;
+      letter-spacing:-0.02em;
+      color:#fff;
+    }
+    .stack{display:flex; flex-direction:column; gap:18px;}
+    .card{
+      background:var(--card);
+      border-radius:20px;
+      padding:18px 18px 20px;
+      box-shadow:0 12px 24px rgba(0,0,0,0.18);
+      border:1px solid rgba(0,0,0,0.04);
+    }
+    /* ?낅줈???곸뿭 */
+    .upload-label{
+      font-size:14px;
+      color:var(--muted);
+      margin-bottom:10px;
+      letter-spacing:-0.01em;
+    }
+    .upload-field{
+      position:relative;
+      width:100%;
+      height:64px;
+      border-radius:18px;
+      border:2px dashed #a6a6a6;
+      background:#fefefe;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .upload-field:hover{
+      border-color:#b8b8b8;
+      box-shadow:0 0 0 3px rgba(183,143,247,0.18);
+    }
+    .upload-field.dz-hl{
+      border-color:var(--pill);
+      box-shadow:0 0 0 4px rgba(183,143,247,0.25);
+    }
+    .upload-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:110px;
+      padding:10px 18px;
+      border-radius:18px;
+      background:#dfe3ff; /* softer violet per reference */
+      color:#3b45b3;
+      font-weight:800;
+      font-size:14px;
+      pointer-events:none;
+    }
+    #csvFile{
+      position:absolute;
+      inset:0;
+      opacity:0;
+      cursor:pointer;
+    }
+    /* 而⑦듃濡?移대뱶 */
+    .control-card{padding:18px;}
+    .control-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    .control-box{
+      background:#f1f5f9;
+      border-radius:18px;
+      padding:12px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:150px;
+      border:1px solid var(--border);
+    }
+    .box-title{
+      margin:0;
+      text-align:center;
+      font-size:15px;
+      font-weight:800;
+      color:var(--ink);
+    }
+    .size-row{
+      display:flex;
+      justify-content:center;
+      gap:20px;
+      margin-top:200px; /* about 5cm downward positioning */
+    }
+    .sq{
+      width:42px;
+      height:32px;
+      border:2px solid var(--ink);
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      cursor:pointer;
+      background:#fff;
+      transition:all 0.16s ease;
+    }
+    .sq span{
+      position:absolute;
+      top:-18px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:13px;
+      font-weight:700;
+      color:#111;
+      transition:color 0.16s ease;
+    }
+    .sq.checked{
+      background:var(--pill);
+      border-color:#6646b1;
+      box-shadow:0 0 0 3px rgba(183,143,247,0.35);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .sq.checked span{
+      position:static;
+      transform:none;
+      top:auto;
+      left:auto;
+      color:#000; /* keep size number visible on filled circle */
+    }
+    .chips-box{
+      flex:1;
+      background:#fff;
+      border-radius:14px;
+      border:1.5px solid var(--border);
+      padding:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:flex-start;
+    }
+    .chip-pill{
+      background:#fff;
+      border:2px solid #111;
+      border-radius:999px;
+      padding:6px 12px;
+      font-weight:700;
+      font-size:12px;
+      color:#111;
+      cursor:grab;
+      user-select:none;
+    }
+    .chip-pill.selected{background:#111; color:#fff;}
+    .chip-pill:active{cursor:grabbing;}
+    .dragging{opacity:0.5;}
+    /* ?뚯씠釉?移대뱶 */
+    .results-card{padding:16px 18px 20px;}
+    .results-title{
+      margin:0 0 10px;
+      font-size:15px;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .table-wrap{
+      border-radius:12px;
+      overflow:hidden;
+      background:#f8fafc;
+      border:1.6px solid var(--table-line);
+      max-height:420px;          /* 결과 표 세로 영역을 제한 */
+      overflow-y:auto;           /* 영역 안에서 스크롤 */
+    }
+    .result-table{
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      font-size:12px;
+      color:var(--ink);
+    }
+    .result-table th,
+    .result-table td{
+      border:1.6px solid var(--table-line);
+      padding:10px 10px;
+      height:52px;
+      vertical-align:top;
+    }
+    .result-table th{
+      background:#f5eded;
+      font-weight:800;
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+    .cell-chips{display:flex; flex-wrap:wrap; gap:6px;}
+    .chip-mini{
+      background:#fff;
+      border:1.6px solid #111;
+      border-radius:999px;
+      padding:4px 8px;
+      font-weight:700;
+      font-size:11px;
+    }
+    /* ?덉뒪?좉렇??移대뱶 */
+    .hist-card{padding:16px 18px 24px;}
+    .hist-title{
+      margin:0 0 12px;
+      font-size:15px;
+      font-weight:700;
+      color:var(--ink);
+    }
+    .hist-meta{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:14px;
+      color:var(--ink);
+      margin-bottom:12px;
+    }
+    .hist-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:44px;
+      padding:8px 14px;
+      border-radius:16px;
+      background:#fff;
+      border:1.6px solid #d8d2d2;
+      font-weight:800;
+      color:var(--ink);
+    }
+    .histogram-chart{
+      min-height:260px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-top:6px;
+    }
+    .histogram-empty{
+      font-size:13px;
+      font-weight:700;
+      color:#817b7e;
+    }
+    .hist-bar{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:13px;
+      color:var(--ink);
+    }
+    .hist-bar-label{
+      width:120px;
+      text-align:left;
+      font-weight:800;
+    }
+    .hist-bar-track{
+      flex:1;
+      height:18px;
+      background:#e6e0e3;
+      border-radius:10px;
+      position:relative;
+      overflow:hidden;
+    }
+    .hist-bar-fill{
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg,#7b60cf 0%,#543aa8 100%);
+      border-radius:10px;
+    }
+    .hist-bar-count{
+      min-width:34px;
+      text-align:right;
+      font-weight:800;
+    }
+    /* hidden elements kept for logic compatibility */
+    .mode{display:none;}
+    .file-btn{display:none;}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>조합 분석 현황</h1>
+
+    <div class="stack">
+      <section class="card upload-card">
+        <div class="upload-label"> 조합별 Loglikelihood 분석 CSV</div>
+        <label id="comboUploadZone" class="upload-field" role="button" tabindex="0" aria-label="CSV 파일 선택">
+          <input type="file" id="csvFile" accept=".csv" />
+          <span class="upload-pill" id="comboUploadName">CSV 업로드</span>
+        </label>
+      </section>
+
+      <section class="card control-card">
+        <div class="control-grid">
+          <div class="control-box size-box">
+            <p class="box-title">조합 크기</p>
+            <div class="size-row">
+              <div class="sq" data-size="2"><span>2</span></div>
+              <div class="sq" data-size="3"><span>3</span></div>
+              <div class="sq" data-size="4"><span>4</span></div>
+            </div>
+          </div>
+          <div class="control-box include-box" id="includeCard">
+            <p class="box-title">포함해야 할 항목</p>
+            <div class="chips-box" id="includeChips"></div>
+          </div>
+          <div class="control-box exclude-box" id="excludeCard">
+            <p class="box-title">제외할 항목</p>
+            <div class="chips-box" id="excludeChips"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card results-card" aria-label="?? ?? ? ??">
+        <p class="results-title">조합 목록 및 조합별 결과</p>
+        <div class="table-wrap">
+          <table class="result-table" role="table" aria-label="?? ?? ???">
+            <thead>
+              <tr>
+                <th>Feature_Combination</th>
+                <th>LogLik_Refit_Copula</th>
+                <th>LogLik_Drop_Refit</th>
+                <th>LogLik_Drop vs OriginalCombo</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card hist-card" aria-label="?? ??? ????? ??">
+        <p class="hist-title">각 특성별 히스토그램</p>
+        <div class="hist-meta">
+          <span>선택된 특성</span>
+          <span class="hist-pill" id="histSelectedValue">0</span>
+          <span>(개)</span>
+        </div>
+        <div class="histogram-chart" id="histogramBars" role="img" aria-label="?? ??? ?????"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- hidden elements retained for script compatibility -->
+  <div class="mode">
+    <button class="pill" id="globalBtn">???</button>
+    <button class="pill" id="integratedBtn">??</button>
+  </div>
+  <label class="file-btn">?? ?? <input type="file" id="csvFileFallback" accept=".csv" /></label>
+
+<script>
+    // 기본 내장 샘플 CSV (Feature_Combination 기준으로 칩 채움)
+    const EMBEDDED_GLOBAL_CSV = `Feature_Combination,Num_Features,LogLik_Original_Copula,LogLik_Refit_Copula,LogLik_Drop_Original,LogLik_Drop_Refit,LogLik_Drop vs OriginalCombo
+steps+distance,2,0.10,0.35,0.90,0.76,-0.14
+steps+calories,2,0.08,0.32,0.88,0.74,-0.14
+heart_rate+steps,2,0.12,0.38,0.92,0.78,-0.14
+steps_times_distance+steps+weight+distance,4,-0.6609517884999934,0.5513316620664488,3.7395397940236306,3.650350647715772,-0.08918914630785846
+steps_times_distance+resting_heart+steps+distance,4,-0.6462974390605953,0.5834395414731786,3.724885444584233,3.6182427683090426,-0.10664267627519042
+steps_times_distance+steps+age+distance,4,-0.6458291415243227,0.5426106772299558,3.7244171470479603,3.659071632552265,-0.06534551449569515
+steps_times_distance+steps+distance,3,-0.6442179118953808,0.5055747845306453,3.7228059174190182,3.696107525251576,-0.026698392167442186
+steps_times_distance+height+steps+distance,4,-0.642281818026627,0.5069812362038187,3.7208698235502644,3.6947010735784023,-0.026168749971862137
+steps_times_distance+entropy_steps+steps+distance,4,-0.6410259174410395,0.6035404791282553,3.719613922964677,3.598141830653966,-0.12147209231071088
+entropy_heart+steps_times_distance+steps+distance,4,-0.6403252912794621,0.6756738712821437,3.7189132968030996,3.526008438500077,-0.1929048583030224
+sd_norm_heart+steps_times_distance+steps+distance,4,-0.6362696678056139,0.715572098669148,3.7148576733292513,3.4861102111130733,-0.22874746221617803
+steps_times_distance+heart_rate+steps+distance,4,-0.6333460522698557,0.5862417271578517,3.711934057793493,3.6154405826243696,-0.09649347516912332
+norm_heart+steps_times_distance+steps+distance,4,-0.5996192882797708,0.6638067324539855,3.6782072938034083,3.5378755773282355,-0.14033171647517273
+intensity_karvonen+steps_times_distance+steps+distance,4,-0.5930576478957421,0.6801497699329405,3.6716456534193798,3.5215325398492805,-0.15011311357009927
+steps_times_distance+steps+calories+distance,4,-0.48609817196190686,0.6883247154913859,3.5646861774855445,3.5133575942908353,-0.05132858319470923
+steps_times_distance+steps+age+calories,4,-0.09255295261050617,0.3340558401026317,3.1711409581341434,3.8676264696795895,0.696485511545446
+steps_times_distance+steps+calories,3,-0.06542941012262193,0.2939703439318885,3.1440174156462595,3.9077119658503325,0.7636945502040731
+steps_times_distance+resting_heart+steps+calories,4,-0.06338704740930906,0.36543801721687175,3.1419750529329464,3.8362442925653495,0.6942692396324031
+steps_times_distance+height+steps+calories,4,-0.061944904060264205,0.2987231248519351,3.140532909583902,3.9029591849302863,0.7624262753463844
+entropy_heart+steps_times_distance+steps+calories,4,-0.060009987538868215,0.4570747342336553,3.138597993062506,3.744607575548566,0.6060095824860601
+steps_times_distance+steps+weight+calories,4,-0.05571100798062423,0.3380686329465362,3.1342990135042617,3.863613676835685,0.7293146633314231
+intensity_karvonen+steps_times_distance+steps+age,4,-0.05495916394201712,0.3192093235213565,3.1335471694656545,3.8824729862608645,0.74892581679521`;
+    document.querySelectorAll('.sq').forEach(sq => {
+      sq.addEventListener('click', () => {
+        sq.classList.toggle('checked');
+        if(currentCSV) fillResultsTable(currentCSV);
+      });
+      // 기본으로 모든 조합 크기를 선택해 2개 조합도 바로 보이도록 한다.
+      sq.classList.add('checked');
+    });
+
+    const csvInput = document.getElementById('csvFile');
+    const uploadZone = document.getElementById('comboUploadZone');
+    const uploadName = document.getElementById('comboUploadName');
+    const includeChips = document.getElementById('includeChips');
+    const excludeChips = document.getElementById('excludeChips');
+    const globalBtn = document.getElementById('globalBtn');
+    const integratedBtn = document.getElementById('integratedBtn');
+    const resultsBody = document.getElementById('resultsBody');
+    const histSelectedValue = document.getElementById('histSelectedValue');
+    const histogramBars = document.getElementById('histogramBars');
+    let sortDir = 'asc';
+
+    let currentCSV = null;
+    let draggedChip = null;
+    let lastFilteredRows = [];
+
+    function updateUploadDisplay(file){
+      if(!uploadName) return;
+      if(file){
+        uploadName.textContent = file.name;
+      }else{
+        uploadName.textContent = "CSV 업로드";
+      }
+    }
+
+    function splitCSVLine(line){
+      const out=[]; let cur=''; let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const c=line[i];
+        if(c==='"'){ inQ=!inQ; continue; }
+        if(c===',' && !inQ){ out.push(cur); cur=''; } else { cur+=c; }
+      }
+      out.push(cur); return out;
+    }
+    function normalizeKey(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_'); }
+    function fmtNum(v){ const n = parseFloat(v); return Number.isFinite(n) ? n.toFixed(2) : (v||''); }
+
+    function computeFeatureWeightMap(){
+      const weights = new Map();
+      if(!lastFilteredRows.length) return weights;
+
+      const sorted = [...lastFilteredRows];
+      sorted.sort((a,b)=>{
+        const ad = Number.isFinite(a.diffVal) ? a.diffVal : Number.NEGATIVE_INFINITY;
+        const bd = Number.isFinite(b.diffVal) ? b.diffVal : Number.NEGATIVE_INFINITY;
+        return bd - ad;
+      });
+
+      const rowWeight = new Map();
+      sorted.forEach((row, idx)=>{
+        const base = Number.isFinite(row.diffVal) ? (idx + 1) : 0;
+        rowWeight.set(row, base);
+      });
+
+      lastFilteredRows.forEach(row=>{
+        const weight = rowWeight.get(row) || 0;
+        if(weight<=0) return;
+        const seen = new Set();
+        row.feats.forEach(f=>{
+          const label = f.trim();
+          if(!label) return;
+          const lower = label.toLowerCase();
+          if(seen.has(lower)) return;
+          seen.add(lower);
+          weights.set(lower, (weights.get(lower)||0) + weight);
+        });
+      });
+
+      return weights;
+    }
+
+    function updateHistogramSelectionLabel(){
+      if(!histSelectedValue) return;
+      const count = includeChips.children.length;
+      histSelectedValue.textContent = `${count}`;
+    }
+
+    function updateHistogram(){
+      if(!histogramBars) return;
+      histogramBars.innerHTML='';
+      const chips = Array.from(includeChips.children);
+      if(!chips.length){
+        const empty=document.createElement('div');
+        empty.className='histogram-empty';
+        empty.textContent='?ы븿?댁빞 ??ぉ???좏깮?댁＜?몄슂.';
+        histogramBars.appendChild(empty);
+        return;
+      }
+
+      const weightMap = computeFeatureWeightMap();
+      const data = chips.map(chip=>{
+        const label = chip.textContent.trim();
+        const lower = label.toLowerCase();
+        const score = weightMap.get(lower) || 0;
+        return {label, score};
+      });
+
+      const max = data.reduce((acc,obj)=> Math.max(acc, obj.score), 0);
+      if(max===0){
+        const empty=document.createElement('div');
+        empty.className='histogram-empty';
+        empty.textContent='議곌굔??異⑹”?섎뒗 議고빀???놁뒿?덈떎.';
+        histogramBars.appendChild(empty);
+        return;
+      }
+
+      data.sort((a,b)=> b.score - a.score);
+
+      data.forEach(({label,score})=>{
+        const row=document.createElement('div'); row.className='hist-bar';
+        const name=document.createElement('div'); name.className='hist-bar-label'; name.textContent=label;
+        const track=document.createElement('div'); track.className='hist-bar-track';
+        const fill=document.createElement('div'); fill.className='hist-bar-fill'; fill.style.width = `${(score/max)*100}%`;
+        track.appendChild(fill);
+        const value=document.createElement('div'); value.className='hist-bar-count'; value.textContent = Number.isInteger(score) ? score : score.toFixed(1);
+        row.appendChild(name); row.appendChild(track); row.appendChild(value);
+        histogramBars.appendChild(row);
+      });
+    }
+
+    function refreshHistogramSection(){
+      updateHistogramSelectionLabel();
+      updateHistogram();
+    }
+
+    function hasChip(area, label){
+      return Array.from(area.children).some(c=>c.textContent.trim().toLowerCase()===label.trim().toLowerCase());
+    }
+    function addChipEvents(chip){
+      chip.draggable = true;
+      chip.addEventListener('dragstart', e=>{ draggedChip = chip; chip.classList.add('dragging'); });
+      chip.addEventListener('dragend',   ()=>{ draggedChip = null; chip.classList.remove('dragging'); });
+      chip.addEventListener('click', ()=>{
+        if(chip.parentElement===includeChips){
+          chip.classList.toggle('selected');
+          refreshHistogramSection();
+          if(currentCSV) fillResultsTable(currentCSV);
+        }
+      });
+      chip.addEventListener('dblclick',  ()=>{
+        const to = chip.parentElement===includeChips ? excludeChips : includeChips;
+        chip.classList.remove('selected');
+        if(!hasChip(to, chip.textContent)) to.appendChild(chip);
+        refreshHistogramSection();
+        if(currentCSV) fillResultsTable(currentCSV);
+      });
+    }
+    function makeChip(text){ const el=document.createElement('div'); el.className='chip-pill'; el.textContent=text; addChipEvents(el); return el; }
+    function renderChips(features){
+      includeChips.innerHTML='';
+      excludeChips.innerHTML='';
+
+      const seen = new Set();
+      features.forEach(f=>{
+        const label = f.trim();
+        if(!label) return;
+        const key = label.toLowerCase();
+        if(seen.has(key)) return; // once per feature name
+        seen.add(key);
+        includeChips.appendChild(makeChip(label));
+      });
+
+      refreshHistogramSection();
+    }
+    [includeChips, excludeChips].forEach(area=>{
+      area.addEventListener('dragover', e=> e.preventDefault());
+      area.addEventListener('drop', e=>{ e.preventDefault(); if(!draggedChip) return; const to=area; if(!hasChip(to, draggedChip.textContent)) to.appendChild(draggedChip); draggedChip=null; refreshHistogramSection(); if(currentCSV) fillResultsTable(currentCSV); });
+    });
+
+    refreshHistogramSection();
+
+    function buildUniqueFeatureList(csvText, featIdx){
+      const lines = csvText.split(/\r?\n/).filter(l=>l.trim().length);
+      const seen=new Set(); const out=[];
+      for(let i=1;i<lines.length;i++){
+        const cols = splitCSVLine(lines[i]);
+        const cell = (cols[featIdx]||'').trim();
+        if(!cell) continue;
+        cell.split('+').map(s=>s.trim()).filter(Boolean).forEach(tok=>{
+          const k = tok.toLowerCase(); if(!seen.has(k)){ seen.add(k); out.push(tok); }
+        });
+      }
+      return out;
+    }
+
+    async function handleCSVText(text, filename=''){
+      currentCSV = text;
+
+      const lines = text.split(/\\r?\\n/).filter(l=>l.trim().length);
+      lastFilteredRows = [];
+
+      if(lines.length){
+        const headers = splitCSVLine(lines[0]);
+        const featIdx = headers.map(h=>normalizeKey(h)).indexOf('feature_combination');
+        if(featIdx>-1){
+          const list = buildUniqueFeatureList(text, featIdx);
+          renderChips(list);
+        }else{
+          includeChips.innerHTML='';
+          excludeChips.innerHTML='';
+          refreshHistogramSection();
+        }
+      }else{
+        includeChips.innerHTML='';
+        excludeChips.innerHTML='';
+        refreshHistogramSection();
+      }
+
+      fillResultsTable(text);
+
+      if(filename){
+        const lower = filename.toLowerCase();
+        if(globalBtn){ if(lower.includes("global")) globalBtn.classList.add("active"); else globalBtn.classList.remove("active"); }
+        if(integratedBtn){ if(lower.includes("integrated")) integratedBtn.classList.add("active"); else integratedBtn.classList.remove("active"); }
+        updateUploadDisplay({name: filename});
+      }else{
+        if(globalBtn) globalBtn.classList.remove("active");
+        if(integratedBtn) integratedBtn.classList.remove("active");
+        updateUploadDisplay(null);
+      }
+    }
+
+    function fillResultsTable(csvText){
+      resultsBody.innerHTML='';
+      const lines = csvText.split(/\r?\n/).filter(l=>l.trim().length);
+      if(!lines.length){
+        lastFilteredRows = [];
+        refreshHistogramSection();
+        return;
+      }
+      const headers = splitCSVLine(lines[0]);
+      const hn = headers.map(h=>normalizeKey(h));
+      const col = {
+        feat: hn.indexOf('feature_combination'),
+        cop : hn.indexOf('loglik_refit_copula'),
+        drop: hn.indexOf('loglik_drop_refit'),
+        diff: (function(){ const targets=['loglik_drop_vs_originalcombo','loglik_drop_vs_original_combo','loglik_drop_vs_original']; for(const t of targets){ const i=hn.indexOf(t); if(i>-1) return i; } return -1; })(),
+        num : hn.indexOf('num_features')
+      };
+      if(col.feat<0){ console.warn('Feature_Combination column missing'); return; }
+
+      const includeSet = new Set(Array.from(includeChips.children)
+                                .filter(x=>x.classList.contains('selected'))
+                                .map(x=>x.textContent.trim().toLowerCase()));
+      const excludeSet = new Set(Array.from(excludeChips.children).map(x=>x.textContent.trim().toLowerCase()));
+      const checkedSizes = Array.from(document.querySelectorAll('.sq.checked')).map(sq => sq.getAttribute('data-size'));
+
+      const rows = [];
+      for(let i=1;i<lines.length;i++){
+        const cells = splitCSVLine(lines[i]);
+        if(!cells.length) continue;
+
+        if(col.num>-1){
+          const nfRaw = (cells[col.num]||'').trim();
+          const nfNum = parseFloat(nfRaw);
+          const match = checkedSizes.length===0 || checkedSizes.some(sz => {
+            const szTrim = (sz||'').trim();
+            const szNum = parseFloat(szTrim);
+            if(Number.isFinite(szNum) && Number.isFinite(nfNum)) return szNum === nfNum;
+            return szTrim === nfRaw;
+          });
+          if(!match) continue;
+        }
+
+        const feats=(cells[col.feat]||'').split('+').map(s=>s.trim()).filter(Boolean);
+        const featsLower = new Set(feats.map(f=>f.toLowerCase()));
+
+        let blocked=false; for(const ex of excludeSet){ if(featsLower.has(ex)){ blocked=true; break; } }
+        if(blocked) continue;
+
+        let ok=true; if(includeSet.size>0){ for(const inc of includeSet){ if(!featsLower.has(inc)){ ok=false; break; } } }
+        if(!ok) continue;
+
+        const diffVal = col.diff>-1 ? parseFloat(cells[col.diff]) : NaN;
+        rows.push({cells, feats, diffVal});
+      }
+
+      if(col.diff>-1){
+        rows.sort((a,b)=>{
+          const an = Number.isFinite(a.diffVal) ? a.diffVal : -Infinity;
+          const bn = Number.isFinite(b.diffVal) ? b.diffVal : -Infinity;
+          return sortDir==='desc' ? (bn - an) : (an - bn);
+        });
+      }
+
+      for(const row of rows){
+        const {cells, feats} = row;
+        const tr=document.createElement('tr');
+        const td0=document.createElement('td');
+        const wrap=document.createElement('div'); wrap.className='cell-chips';
+        const seen=new Set();
+        feats.forEach(f=>{ const k=f.toLowerCase(); if(seen.has(k)) return; seen.add(k); const sp=document.createElement('span'); sp.className='chip-mini'; sp.textContent=f; wrap.appendChild(sp); });
+        td0.appendChild(wrap); tr.appendChild(td0);
+        const td1=document.createElement('td'); td1.textContent=col.cop>-1?fmtNum(cells[col.cop]):''; tr.appendChild(td1);
+        const td2=document.createElement('td'); td2.textContent=col.drop>-1?fmtNum(cells[col.drop]):''; tr.appendChild(td2);
+        const td3=document.createElement('td'); td3.textContent=col.diff>-1?fmtNum(cells[col.diff]):''; tr.appendChild(td3);
+        resultsBody.appendChild(tr);
+      }
+
+      lastFilteredRows = rows;
+      refreshHistogramSection();
+    }
+
+    csvInput.addEventListener('change', async (e)=>{
+      const file=e.target.files?.[0];
+      if(!file){ updateUploadDisplay(null); return; }
+      updateUploadDisplay(file);
+      const text = await file.text();
+      await handleCSVText(text, file.name);
+    });
+
+    if(uploadZone){
+      const triggerSelect = ()=> csvInput?.click();
+      uploadZone.addEventListener('click', triggerSelect);
+      uploadZone.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); triggerSelect(); } });
+      uploadZone.addEventListener('dragover', (e)=>{ e.preventDefault(); uploadZone.classList.add('dz-hl'); });
+      uploadZone.addEventListener('dragleave', ()=> uploadZone.classList.remove('dz-hl'));
+      uploadZone.addEventListener('drop', (e)=>{
+        e.preventDefault(); uploadZone.classList.remove('dz-hl');
+        const f = e.dataTransfer?.files?.[0];
+        if(f && csvInput){
+          const dt = new DataTransfer();
+          dt.items.add(f);
+          csvInput.files = dt.files;
+          csvInput.dispatchEvent(new Event('change'));
+        }
+      });
+    }
+
+    async function loadEmbeddedCSV(){
+      if(!EMBEDDED_GLOBAL_CSV.trim()) return;
+      await handleCSVText(EMBEDDED_GLOBAL_CSV, 'global.csv');
+      updateUploadDisplay({name:'global.csv'});
+    }
+
+    // 페이지 진입 시 바로 보여주기 위해 내장 CSV 로드
+    loadEmbeddedCSV();
+
+    (function smokeTests(){
+      try{
+        const a = splitCSVLine('a,b,"c,d"');
+        console.assert(a.length===3 && a[2]==='c,d', 'splitCSVLine works');
+        const sample = 'Feature_Combination,Num_Features\\nA+B,2\\nC,1';
+        const list = buildUniqueFeatureList(sample, 0);
+        console.assert(list.includes('A')&&list.includes('B'), 'feature list extracted');
+      }catch(e){ console.error('Smoke tests failed', e); }
+    })();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+

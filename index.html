@@ -1,0 +1,1563 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ANONYVIZ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Momo+Trust+Display&family=Noto+Sans+KR:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Noto Sans KR", "Momo Trust Display", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+        background: #000;
+        color: #fff;
+      }
+
+      .page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 60px 20px 120px;
+        gap: 36px;
+      }
+
+      .title {
+        font-size: 1rem;
+        letter-spacing: 0.4rem;
+        color: #a5a1ff;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+
+      .description {
+        font-size: 1.05rem;
+        line-height: 1.6;
+        color: #dfdfdf;
+        max-width: 520px;
+        margin: 0 auto;
+      }
+
+      .hero-visual {
+        width: 280px;
+        max-width: 80vw;
+        margin: 20px auto 26px;
+        display: block;
+        filter: drop-shadow(0 20px 35px rgba(84, 223, 252, 0.45));
+      }
+
+      .upload-btn {
+        appearance: none;
+        border: 2px solid rgba(255, 255, 255, 0.7);
+        border-radius: 22px;
+        padding: 14px 38px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: transparent;
+        color: #fff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
+          0 15px 28px rgba(0, 0, 0, 0.55);
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          border-color 0.2s ease;
+      }
+
+      .upload-btn:hover {
+        transform: translateY(-3px);
+        border-color: #6ffbff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45),
+          0 20px 36px rgba(0, 255, 255, 0.25);
+      }
+
+      .file-name {
+        font-size: 0.95rem;
+        color: #9de8ff;
+        min-height: 1.4em;
+        font-weight: 700;
+      }
+
+      .steps {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 36px;
+        width: 100%;
+        margin-top: 30px;
+      }
+
+      .dashboard {
+        width: 100%;
+        background: #000;
+        border-radius: 32px;
+        padding: 46px 32px 60px;
+        display: none;
+        flex-direction: column;
+        gap: 46px;
+        box-shadow: 0 40px 80px rgba(0, 0, 0, 0.65);
+      }
+
+      .dashboard.visible {
+        display: flex;
+      }
+
+      .dashboard .steps {
+        margin-top: 0;
+      }
+
+      .flow-panels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: stretch;
+        justify-content: center;
+        position: relative;
+      }
+      .download-pill{
+        position:absolute;
+        top:-3cm;
+        left:50%;
+        transform:translateX(-50%);
+        z-index:5;
+        pointer-events:auto;
+      }
+      .download-pill a{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        padding:8px 18px;
+        border-radius:999px;
+        background:linear-gradient(90deg,#7c3aed 0%,#6ffbff 100%);
+        color:#0b2240;
+        font-weight:800;
+        letter-spacing:0.01em;
+        font-size:0.9rem;
+        box-shadow:0 8px 16px rgba(0,0,0,0.25);
+        text-decoration:none;
+        cursor:pointer;
+      }
+
+      .flow-panel {
+        flex: 1 1 280px;
+        background: #fff;
+        border-radius: 26px;
+        padding: 28px 26px 32px 40px;
+        color: #1b1b1b;
+        min-width: 260px;
+        box-shadow: 0 20px 32px rgba(0, 0, 0, 0.25);
+        position: relative;
+      }
+
+      .flow-panel::before {
+        content: "";
+        position: absolute;
+        left: 18px;
+        top: 20px;
+        bottom: 20px;
+        width: 6px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #7c3aed, #a855f7);
+      }
+
+      .flow-panel h3 {
+        margin: 0 0 20px;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .flow-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .flow-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 20px;
+        background: #f7f3ff;
+        font-weight: 600;
+        color: #2c1a34;
+      }
+
+      .flow-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 6px 16px;
+        border: 1px solid #d7d0f7;
+        font-size: 0.85rem;
+        background: #fff;
+        color: #51338c;
+      }
+      .flow-value {
+        font-family: inherit;
+        font-weight: 600;
+        color: #51338c;
+        letter-spacing: 0.01em;
+      }
+
+      .flow-row--strategy {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+        background: #f5f5fb;
+      }
+
+      .flow-strategy-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        cursor: pointer;
+      }
+
+      .flow-strategy-arrow {
+        width: 0;
+        height: 0;
+        border-left: 7px solid transparent;
+        border-right: 7px solid transparent;
+        border-top: 9px solid #9a8aca;
+        transition: transform 0.2s ease;
+        transform-origin: center;
+      }
+
+      .flow-row--strategy[aria-expanded="true"] .flow-strategy-arrow {
+        transform: rotate(180deg);
+      }
+
+      .flow-strategy-body {
+        display: none;
+        font-size: 0.85rem;
+        color: #5b4a88;
+        line-height: 1.4;
+      }
+
+      .flow-row--strategy[aria-expanded="true"] .flow-strategy-body {
+        display: block;
+      }
+
+      .flow-strategy-desc {
+        margin: 0;
+      }
+
+      .flow-strategy-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        margin-top: 0.35rem;
+      }
+
+      .feature-chip {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #4c1d95;
+        background: #fff;
+        border-radius: 999px;
+        padding: 0.2rem 0.65rem;
+        border: 1px solid #e6d7ff;
+      }
+
+      .feature-chip--empty {
+        opacity: 0.7;
+        border-style: dashed;
+        color: #6b617f;
+      }
+
+      .flow-row--combo {
+        gap: 14px;
+        align-items: flex-start;
+      }
+
+      .combo-badge {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: #8b5cf6;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .combo-body {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .combo-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .combo-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 6px 12px;
+        border: 1px solid #d7d0f7;
+        background: #fff;
+        color: #4c1d95;
+        font-weight: 700;
+        font-size: 0.9rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      }
+
+      .combo-chip--empty {
+        border-style: dashed;
+        opacity: 0.7;
+      }
+
+      .flow-arrow {
+        flex: 0 0 110px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .flow-arrow-line {
+        width: 110px;
+        height: 6px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #fff0ff 0%, #f0d9ff 50%, #ead8ff 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85),
+          0 12px 30px rgba(0, 0, 0, 0.45);
+      }
+
+      .flow-arrow-pointer {
+        position: absolute;
+        top: 50%;
+        left: 51%;
+        width: 36px;
+        height: 32px;
+        transform: translate(-20%, -50%);
+        background: linear-gradient(135deg, #7c3aed, #c084fc);
+        clip-path: polygon(0% 50%, 0% 0%, 100% 50%, 0% 100%);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+      }
+
+
+      .step-card {
+        width: 200px;
+        background: #fff;
+        border-radius: 22px;
+        padding: 26px 20px 32px;
+        color: #151515;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+        border: 3px solid transparent;
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.45);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      }
+      .step-card[data-link] {
+        cursor: pointer;
+      }
+
+      .step-card img {
+        width: 98px;
+        height: auto;
+      }
+
+      .step-card strong {
+        font-size: 1.02rem;
+      }
+
+      .step-card button {
+        width: 100%;
+        background: #030303;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 0;
+        font-size: 0.95rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .step-card:hover {
+        border-color: #6ffbff;
+        animation: neonPulse 1.4s ease-in-out infinite alternate;
+      }
+
+      .hover-note {
+        position: absolute;
+        top: -48px;
+        left: 50%;
+        transform: translate(-50%, 5px);
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.88);
+        color: #fff;
+        font-size: 0.82rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .step-card.tip:hover .hover-note {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @keyframes neonPulse {
+        from {
+          box-shadow: 0 16px 30px rgba(0, 0, 0, 0.45),
+            0 0 12px rgba(84, 223, 252, 0.45);
+        }
+        to {
+          box-shadow: 0 16px 30px rgba(0, 0, 0, 0.45),
+            0 0 42px rgba(84, 223, 252, 1);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .flow-arrow {
+          display: none;
+        }
+        .flow-panel {
+          min-width: 100%;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .title {
+          letter-spacing: 0.3rem;
+        }
+
+        .step-card {
+          width: 80%;
+          max-width: 320px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div>
+        <div class="title">ANONYVIZ</div>
+        <p class="description">
+          데이터셋 가명처리에 필요한 최적 임계값을 추출하고,<br />
+          가명처리 전략과 조합을 한눈에 제공하는 대시보드
+        </p>
+      </div>
+
+      <img src="1.png" alt="Anonyviz 커버 일러스트" class="hero-visual" />
+
+      <input
+        type="file"
+        id="dataUpload"
+        accept=".zip,application/zip"
+        style="display: none"
+      />
+      <button class="upload-btn" id="uploadTrigger">데이터 ZIP 업로드</button>
+      <div class="file-name" id="fileName" aria-live="polite"></div>
+
+      <section id="dashboard" class="dashboard" aria-hidden="true">
+        <div class="flow-panels">
+          <article class="flow-panel">
+            <h3>상황별 추천 임계값 (Percentile)</h3>
+            <ul class="flow-list">
+              <li class="flow-row">
+                <span class="flow-tag">보수형</span>
+                <span class="flow-value" data-tier="conservative">P-- (--)</span>
+              </li>
+              <li class="flow-row">
+                <span class="flow-tag">균형형</span>
+                <span class="flow-value" data-tier="balanced">P-- (--)</span>
+              </li>
+              <li class="flow-row">
+                <span class="flow-tag">탐지우선형</span>
+                <span class="flow-value" data-tier="riskfirst">P-- (--)</span>
+              </li>
+            </ul>
+          </article>
+          <div class="flow-arrow" aria-hidden="true">
+            <span class="flow-arrow-line"></span>
+            <span class="flow-arrow-pointer"></span>
+          </div>
+          <div class="download-pill">
+            <a href="Copy%20of%20PBL%20GUI%20(1).pdf" download>REPORT DOWNLOAD</a>
+          </div>
+          
+          <article class="flow-panel">
+            <h3>데이터 특성별 가명처리 전략 추천</h3>
+            <ul class="flow-list">
+              <li class="flow-row flow-row--strategy" aria-expanded="false">
+                <div class="flow-strategy-head" role="button" tabindex="0">
+                  <span>Density-based</span>
+                  <span class="flow-strategy-arrow"></span>
+                </div>
+                <div class="flow-strategy-body">
+                  <p class="flow-strategy-desc">데이터 분포에 따라 구간을 자동 조정해 민감 영역을 부드럽게 처리합니다.</p>
+                  <div class="flow-strategy-features" data-strategy-list="Density-based"></div>
+                </div>
+              </li>
+              <li class="flow-row flow-row--strategy" aria-expanded="false">
+                <div class="flow-strategy-head" role="button" tabindex="0">
+                  <span>Log binning</span>
+                  <span class="flow-strategy-arrow"></span>
+                </div>
+                <div class="flow-strategy-body">
+                  <p class="flow-strategy-desc">로그 스케일로 구간을 나눠 꼬리 데이터를 보존/강화합니다.</p>
+                  <div class="flow-strategy-features" data-strategy-list="Log binning"></div>
+                </div>
+              </li>
+              <li class="flow-row flow-row--strategy" aria-expanded="false">
+                <div class="flow-strategy-head" role="button" tabindex="0">
+                  <span>KMeans</span>
+                  <span class="flow-strategy-arrow"></span>
+                </div>
+                <div class="flow-strategy-body">
+                  <p class="flow-strategy-desc">클러스터별로 다른 임계값을 적용해 균형을 찾습니다.</p>
+                  <div class="flow-strategy-features" data-strategy-list="KMeans"></div>
+                </div>
+              </li>
+              <li class="flow-row flow-row--strategy" aria-expanded="false">
+                <div class="flow-strategy-head" role="button" tabindex="0">
+                  <span>Decision Tree</span>
+                  <span class="flow-strategy-arrow"></span>
+                </div>
+                <div class="flow-strategy-body">
+                  <p class="flow-strategy-desc">규칙 기반 분할로 민감 구간을 명시적으로 보호합니다.</p>
+                  <div class="flow-strategy-features" data-strategy-list="Decision Tree"></div>
+                </div>
+              </li>
+            </ul>
+          </article>
+          <div class="flow-arrow" aria-hidden="true">
+            <span class="flow-arrow-line"></span>
+            <span class="flow-arrow-pointer"></span>
+          </div>
+          <article class="flow-panel">
+            <h3>추천 조합 결과</h3>
+            <ul class="flow-list">
+              <li
+                class="flow-row flow-row--combo"
+                data-combo-rank="1"
+                data-combo-strategy="Density-based"
+              >
+                <span class="combo-badge">1</span>
+                <div class="combo-body">
+                  <div class="combo-chips" data-combo-features></div>
+                </div>
+              </li>
+              <li
+                class="flow-row flow-row--combo"
+                data-combo-rank="2"
+                data-combo-strategy="Log binning"
+              >
+                <span class="combo-badge">2</span>
+                <div class="combo-body">
+                  <div class="combo-chips" data-combo-features></div>
+                </div>
+              </li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="steps">
+          <article class="step-card tip" data-link="thre.html">
+            <span class="hover-note">가명처리 구간별 최적 임계값을 확인해보세요.</span>
+            <strong>임계값 분석</strong>
+            <img src="thre.png" alt="임계값 분석" />
+            <button>선택</button>
+          </article>
+          <article class="step-card tip" data-link="stra.html">
+            <span class="hover-note">데이터 특성별로 가명처리 전략을 추천해드립니다.</span>
+            <strong>가명처리 전략 추천</strong>
+            <img src="strategy.png" alt="가명처리 전략 추천" />
+            <button>선택</button>
+          </article>
+          <article class="step-card tip" data-link="new.html">
+            <span class="hover-note">가명처리 조합을 자동으로 추천해드립니다.</span>
+            <strong>추천 조합 도출</strong>
+            <img src="coop.png" alt="추천 조합" />
+            <button>선택</button>
+          </article>
+        </div>
+      </section>
+    </main>
+
+            <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="zip-bridge.js"></script>
+    <script>
+      (function () {
+        const uploadTrigger = document.getElementById("uploadTrigger");
+        const dataUpload = document.getElementById("dataUpload");
+        const fileName = document.getElementById("fileName");
+        const dashboard = document.getElementById("dashboard");
+        const tierValueEls = {
+          conservative: document.querySelector('[data-tier="conservative"]'),
+          balanced: document.querySelector('[data-tier="balanced"]'),
+          riskfirst: document.querySelector('[data-tier="riskfirst"]'),
+        };
+        const strategyListEls = {};
+        document.querySelectorAll("[data-strategy-list]").forEach((el) => {
+          strategyListEls[el.dataset.strategyList.toLowerCase()] = el;
+        });
+        const comboEls = Array.from(document.querySelectorAll("[data-combo-rank]"));
+        let latestZipSave = null;
+        let parsingPromise = Promise.resolve();
+        const shared = (window.anonyvizContext = window.anonyvizContext || {});
+        shared.latestZipFile = shared.latestZipFile || null;
+        shared.exportData = shared.exportData || { summary: [], strategies: [], combinations: null };
+        const setParsingPromise = (promise) => {
+          parsingPromise = promise;
+          shared.parsingPromise = promise;
+        };
+        setParsingPromise(parsingPromise);
+        const safeZipClear = () =>
+          window.ZipBridge && typeof ZipBridge.clear === "function"
+            ? ZipBridge.clear()
+            : Promise.resolve();
+        const safeZipSave = (file) =>
+          window.ZipBridge && typeof ZipBridge.save === "function"
+            ? ZipBridge.save(file)
+            : Promise.resolve();
+
+        const fallbackTier = "P-- (--)";
+        const fallbackFeature =
+          '<span class="feature-chip feature-chip--empty">추천 항목 없음</span>';
+
+        const normalizeKey = (v) => String(v || "").toLowerCase().replace(/[\s_]+/g, "");
+        const fallbackCombo = "항목 없음";
+
+        function setTierValues(values) {
+          ["conservative", "balanced", "riskfirst"].forEach((type) => {
+            const el = tierValueEls[type];
+            if (el) el.textContent = values?.[type] ?? fallbackTier;
+          });
+        }
+
+        function setStrategyFeatures(map) {
+          Object.entries(strategyListEls).forEach(([key, el]) => {
+            if (!el) return;
+            const feats = map?.[key] ?? [];
+            el.innerHTML = feats.length
+              ? feats.map((f) => `<span class="feature-chip">${f}</span>`).join("")
+              : fallbackFeature;
+          });
+          shared.strategyGroups = map || {};
+        }
+
+        function renderComboRow(el, features) {
+          const chipsEl = el.querySelector("[data-combo-features]");
+          const hasFeatures = Array.isArray(features) && features.length > 0;
+          const feats = hasFeatures ? features : [fallbackCombo];
+          if (chipsEl) {
+            chipsEl.innerHTML = feats
+              .map(
+                (f) =>
+                  `<span class="combo-chip${hasFeatures ? "" : " combo-chip--empty"}">${f}</span>`
+              )
+              .join("");
+          }
+        }
+
+        function setRecommendedCombos(list) {
+          comboEls.forEach((el) => {
+            const rank = Number(el.dataset.comboRank) || 0;
+            const raw = list && list[rank - 1] ? list[rank - 1] : null;
+            const features = raw
+              ? String(raw)
+                  .split("+")
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+              : [];
+            renderComboRow(el, features);
+          });
+        }
+
+        function findEntry(zip, filename) {
+          const escaped = filename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const regex = new RegExp(`${escaped}$`, "i");
+          const matches = zip.file(regex);
+          return matches && matches.length ? matches[0] : null;
+        }
+
+        function parseCSV(text) {
+          if (!text) return { header: [], rows: [] };
+          const first = text.split(/\r?\n/)[0] || "";
+          const cands = [",", ";", "\t"];
+          let delim = ",";
+          let best = -1;
+          cands.forEach((d) => {
+            const c = (first.match(new RegExp(`\\${d}`, "g")) || []).length;
+            if (c > best) {
+              best = c;
+              delim = d;
+            }
+          });
+          const rows = [];
+          let row = [];
+          let field = "";
+          let inQuotes = false;
+          for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (inQuotes) {
+              if (ch === '"') {
+                if (text[i + 1] === '"') {
+                  field += '"';
+                  i++;
+                } else {
+                  inQuotes = false;
+                }
+              } else {
+                field += ch;
+              }
+            } else if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === delim) {
+              row.push(field);
+              field = "";
+            } else if (ch === "\r") {
+              continue;
+            } else if (ch === "\n") {
+              row.push(field);
+              rows.push(row);
+              row = [];
+              field = "";
+            } else {
+              field += ch;
+            }
+          }
+          row.push(field);
+          if (row.length > 1 || row[0] !== "") rows.push(row);
+          if (!rows.length) return { header: [], rows: [] };
+          const header = rows.shift().map((h) => String(h || "").trim());
+          const data = rows
+            .filter((r) => r.some((cell) => String(cell || "").trim() !== ""))
+            .map((r) => {
+              const obj = {};
+              header.forEach((h, idx) => (obj[h] = (r[idx] ?? "").trim()));
+              return obj;
+            });
+          return { header, rows: data };
+        }
+
+        async function parseTierData(zip) {
+          const entry = findEntry(zip, "recommendation_cards.json");
+          if (!entry) return null;
+          const json = JSON.parse(await entry.async("string"));
+          const out = {};
+          (Array.isArray(json) ? json : []).forEach((row) => {
+            const typeRaw = row?.type;
+            if (!typeRaw) return;
+            const key = typeRaw === "recall_first" ? "riskfirst" : typeRaw;
+            if (!["conservative", "balanced", "riskfirst"].includes(key)) return;
+            const pct = row?.percentile ?? "--";
+            const thr = row?.threshold;
+            const thrVal = Number.isFinite(+thr) ? (+thr).toFixed(2) : "--";
+            out[key] = `P${pct} (${thrVal})`;
+          });
+          return out;
+        }
+
+        function canonicalStrategyName(value) {
+          if (!value) return null;
+          const lower = value.toLowerCase();
+          if (/density/.test(lower)) return "density-based";
+          if (/log/.test(lower) && /bin/.test(lower)) return "log binning";
+          if (/k[-\s]?means?/.test(lower)) return "kmeans";
+          if (/decision/.test(lower) || /tree/.test(lower)) return "decision tree";
+          return null;
+        }
+
+        async function parseStrategyData(zip) {
+          const stratEntry = findEntry(
+            zip,
+            "feature_statistics_with_strategy.csv"
+          );
+          const awEntry = findEntry(zip, "aw_fb_data.csv");
+          if (!stratEntry && !awEntry) return null;
+
+          // Parse strategy CSV if present (to get recommended_strategy order)
+          let stratRows = [];
+          if (stratEntry) {
+            const parsed = parseCSV(await stratEntry.async("string"));
+            const headers = parsed.header.map((h) => normalizeKey(h));
+            const stratIdx = headers.findIndex((k) =>
+              [
+                "recommendedstrategy",
+                "recommended_strategy",
+                "strategy",
+                "beststrategy",
+                "best_strategy",
+              ].includes(k)
+            );
+            if (stratIdx >= 0) {
+              const stratCol = parsed.header[stratIdx];
+              stratRows = parsed.rows
+                .map((r) => canonicalStrategyName(r[stratCol]))
+                .filter(Boolean);
+            }
+          }
+
+          // Parse aw_fb_data header as feature list (column order)
+          let awFeatures = [];
+          if (awEntry) {
+            const parsedAw = parseCSV(await awEntry.async("string"));
+            const rawHeaders = parsedAw.header;
+            awFeatures = rawHeaders.filter((h, idx) => {
+              const norm = normalizeKey(h);
+              if (!norm) return false;
+              if (/^[0-9]+$/.test(norm)) return false; // skip index-like columns
+              // first column often an index; drop if no letters
+              if (idx === 0 && !/[a-z]/i.test(norm)) return false;
+              return true;
+            });
+          }
+
+          const groups = {};
+
+          // If we have both strategy order and aw header, map by index
+          if (stratRows.length && awFeatures.length) {
+            const len = Math.min(stratRows.length, awFeatures.length);
+            for (let i = 0; i < len; i++) {
+              const strat = stratRows[i];
+              const feat = awFeatures[i];
+              if (!strat || !feat) continue;
+              const key = strat.toLowerCase();
+              if (!groups[key]) groups[key] = [];
+              groups[key].push(feat);
+            }
+            return groups;
+          }
+
+          // Fallback: use strategy CSV feature column (legacy)
+          if (stratEntry) {
+            const parsed = parseCSV(await stratEntry.async("string"));
+            const headers = parsed.header.map((h) => normalizeKey(h));
+            const featIdx = headers.findIndex((k) =>
+              ["feature", "featurename", "name", "column"].includes(k)
+            );
+            const stratIdx = headers.findIndex((k) =>
+              [
+                "recommendedstrategy",
+                "recommended_strategy",
+                "strategy",
+                "beststrategy",
+                "best_strategy",
+              ].includes(k)
+            );
+            if (featIdx >= 0 && stratIdx >= 0) {
+              const featCol = parsed.header[featIdx];
+              const stratCol = parsed.header[stratIdx];
+              parsed.rows.forEach((row) => {
+                const feat = row[featCol]?.trim();
+                const strat = canonicalStrategyName(row[stratCol]);
+                if (!feat || !strat) return;
+                const key = strat.toLowerCase();
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(feat);
+              });
+            }
+          }
+
+          return Object.keys(groups).length ? groups : null;
+        }
+
+        function pickTopCombosFromParsed(parsed) {
+          if (!parsed || !Array.isArray(parsed.header) || !Array.isArray(parsed.rows))
+            return null;
+          const headersNorm = parsed.header.map((h) => normalizeKey(h));
+          const featKey = normalizeKey("feature_combination");
+          const featIdx = headersNorm.indexOf(featKey);
+          if (featIdx < 0) return null;
+
+          const diffKeys = [
+            "loglik_drop_vs_originalcombo",
+            "loglik_drop_vs_original_combo",
+            "loglik_drop_vs_original",
+          ];
+          let scoreIdx = diffKeys
+            .map((key) => headersNorm.indexOf(normalizeKey(key)))
+            .find((idx) => idx >= 0);
+          if (scoreIdx === undefined || scoreIdx === -1) {
+            scoreIdx = headersNorm.findIndex((k, idx) => {
+              if (idx === featIdx) return false;
+              return parsed.rows.some((row) =>
+                Number.isFinite(parseFloat(row[parsed.header[idx]]))
+              );
+            });
+          }
+
+          const combos = parsed.rows
+            .map((row, idx) => {
+              const name = row[parsed.header[featIdx]]?.trim();
+              const scoreRaw = scoreIdx >= 0 ? row[parsed.header[scoreIdx]] : null;
+              const score = Number.isFinite(parseFloat(scoreRaw))
+                ? parseFloat(scoreRaw)
+                : NaN;
+              return { name, score, idx };
+            })
+            .filter((item) => item.name);
+
+          const sorted = combos.sort((a, b) => {
+            const aHas = Number.isFinite(a.score);
+            const bHas = Number.isFinite(b.score);
+            if (aHas && bHas) {
+              if (a.score === b.score) return a.idx - b.idx;
+              return a.score - b.score; // asc
+            }
+            if (aHas) return -1;
+            if (bHas) return 1;
+            return a.idx - b.idx;
+          });
+
+          return sorted.slice(0, 2).map((c) => c.name);
+        }
+
+        // Pick top feature combinations (ascending) from the combinations CSV inside the ZIP.
+        async function parseCombinationResults(zip) {
+          const candidates = ["combinations_compare.csv", "global.csv", "integrated.csv"];
+          let entry = null;
+          for (const name of candidates) {
+            const found = findEntry(zip, name);
+            if (found) {
+              entry = found;
+              break;
+            }
+          }
+          if (!entry) return null;
+
+          const parsed = parseCSV(await entry.async("string"));
+          return pickTopCombosFromParsed(parsed);
+        }
+
+        function toNumberOrNull(v) {
+          const n = Number(v);
+          return Number.isFinite(n) ? n : null;
+        }
+
+        async function parseSummaryForExport(zip) {
+          if (!zip) return [];
+          const recEntry = findEntry(zip, "recommendation_cards.json");
+          if (!recEntry) return [];
+          const recJson = JSON.parse(await recEntry.async("string"));
+
+          let summaryJson = null;
+          const summaryEntry = findEntry(zip, "vector_risk_summary.json");
+          if (summaryEntry) {
+            try {
+              summaryJson = JSON.parse(await summaryEntry.async("string"));
+            } catch (err) {
+              console.warn("summary JSON parse failed", err);
+            }
+          }
+          const overallMAE =
+            summaryJson?.overall_mae ??
+            summaryJson?.mae ??
+            summaryJson?.overallMAE ??
+            summaryJson?.mae_overall ??
+            null;
+
+          const normalizeType = (type) => {
+            const t = String(type || "").toLowerCase();
+            if (t === "recall_first") return "riskfirst";
+            if (["balanced", "conservative", "riskfirst"].includes(t)) return t;
+            return t || null;
+          };
+
+          return (Array.isArray(recJson) ? recJson : [])
+            .map((item) => {
+              const tier = normalizeType(item?.type);
+              if (!tier) return null;
+              return {
+                tier,
+                percentile: item?.percentile ?? item?.policy ?? item?.cut ?? "",
+                threshold: item?.threshold ?? item?.cut_value ?? item?.value ?? "",
+                policy: item?.policy || item?.description || item?.note || "",
+                fpr: toNumberOrNull(item?.FPR ?? item?.fpr),
+                recall: toNumberOrNull(item?.Recall ?? item?.recall),
+                f1: toNumberOrNull(item?.F1 ?? item?.f1),
+                mae: toNumberOrNull(item?.MAE ?? item?.mae ?? overallMAE),
+              };
+            })
+            .filter(Boolean);
+        }
+
+        function parseStrategyTableForExport(csvText) {
+          if (!csvText) return [];
+          const parsed = parseCSV(csvText);
+          if (!parsed.header?.length) return [];
+          const headerNorm = parsed.header.map((h) => normalizeKey(h));
+          const headerTight = headerNorm.map((h) => h.replace(/_/g, ""));
+          const findCol = (keys) => {
+            const idx = headerTight.findIndex((k) => keys.includes(k));
+            return idx >= 0 ? parsed.header[idx] : null;
+          };
+          const featCol = findCol(["feature", "featurename", "name", "column"]);
+          const stratCol = findCol([
+            "recommendedstrategy",
+            "recommended_strategy",
+            "strategy",
+            "beststrategy",
+            "best_strategy",
+          ]);
+          let pctCol = findCol([
+            "cutpctl",
+            "cutpct",
+            "cutpercentile",
+            "recommendedpercentile",
+            "percentile",
+            "pct",
+            "cutoffpercentile",
+          ]);
+          let thrCol = findCol([
+            "threshold",
+            "cutthreshold",
+            "value",
+            "cut",
+            "cutoff",
+            "thresholdvalue",
+          ]);
+
+          // Heuristic fallback: pick a column with many Pxx style values for percentile
+          if (!pctCol) {
+            const scorePct = parsed.header.map((h, idx) => {
+              const vals = parsed.rows
+                .map((r) => String(r[h] || ""))
+                .filter(Boolean)
+                .slice(0, 50);
+              const hits = vals.filter((v) => /^p?\d{1,3}$/i.test(v.trim())).length;
+              return { idx, hits };
+            });
+            scorePct.sort((a, b) => b.hits - a.hits);
+            if (scorePct[0]?.hits > 0) pctCol = parsed.header[scorePct[0].idx];
+          }
+
+          // Heuristic fallback: numeric-looking column for threshold
+          if (!thrCol) {
+            const scoreThr = parsed.header.map((h, idx) => {
+              const vals = parsed.rows
+                .map((r) => Number(r[h]))
+                .filter((n) => Number.isFinite(n))
+                .slice(0, 50);
+              return { idx, hits: vals.length };
+            });
+            scoreThr.sort((a, b) => b.hits - a.hits);
+            if (scoreThr[0]?.hits > 0) thrCol = parsed.header[scoreThr[0].idx];
+          }
+
+          const detectPctVal = (row) => {
+            const entries = Object.entries(row || {});
+            for (const [k, v] of entries) {
+              const val = String(v || "").trim();
+              if (/^p?\d{1,3}$/i.test(val)) return val.toUpperCase().startsWith("P") ? val.toUpperCase() : `P${val}`;
+            }
+            const nums = entries
+              .map(([, v]) => Number(v))
+              .filter((n) => Number.isFinite(n) && n >= 0 && n <= 100);
+            if (nums.length) return `P${nums[0]}`;
+            return "";
+          };
+
+          const detectThrVal = (row, pctVal) => {
+            const entries = Object.entries(row || {});
+            const pctRaw = (pctVal || "").replace(/^P/i, "");
+            for (const [k, v] of entries) {
+              const keyNorm = normalizeKey(k);
+              if (keyNorm.includes("threshold") || keyNorm.includes("cut")) {
+                const num = Number(v);
+                if (Number.isFinite(num)) return num;
+              }
+            }
+            // pick first numeric that is not the percentile number itself
+            for (const [, v] of entries) {
+              const num = Number(v);
+              if (!Number.isFinite(num)) continue;
+              if (pctRaw && String(num) === pctRaw) continue;
+              return num;
+            }
+            return "";
+          };
+
+          if (!featCol || !stratCol) return [];
+          return parsed.rows
+            .map((row) => ({
+              feature: row[featCol]?.trim() || "",
+              strategy: row[stratCol]?.trim() || "",
+              pct: pctCol ? row[pctCol]?.trim() || detectPctVal(row) : detectPctVal(row),
+              thr: thrCol ? row[thrCol]?.trim() || detectThrVal(row, pctCol ? row[pctCol] : null) : detectThrVal(row, null),
+            }))
+            .filter((r) => r.feature || r.strategy);
+        }
+
+        async function parseStrategyTableFromZip(zip) {
+          if (!zip) return [];
+          const entry = findEntry(zip, "feature_statistics_with_strategy.csv");
+          if (!entry) return [];
+          const text = await entry.async("string");
+          return parseStrategyTableForExport(text);
+        }
+
+        function buildCombinationSectionFromParsed(parsed, allowedNames) {
+          if (!parsed || !parsed.header?.length) return null;
+          const headersNorm = parsed.header.map((h) => normalizeKey(h));
+          const featIdx = headersNorm.indexOf(normalizeKey("feature_combination"));
+          if (featIdx < 0) return null;
+          const findIdx = (...tokens) =>
+            headersNorm.findIndex((k) =>
+              tokens.some((t) => k.includes(normalizeKey(t)))
+            );
+          const refitIdx = findIdx("refit_copula", "refitcopula");
+          const dropIdx = findIdx("drop_refit", "droprefit");
+          let diffIdx = findIdx("drop_vs_originalcombo", "dropvsoriginalcombo");
+          if (diffIdx < 0) diffIdx = findIdx("drop_vs_original", "dropvsoriginal");
+          const allowed =
+            allowedNames && allowedNames.length
+              ? new Set(allowedNames.map((n) => normalizeKey(n)))
+              : null;
+
+          const rows = parsed.rows
+            .map((row) => {
+              const name = row[parsed.header[featIdx]]?.trim();
+              if (!name) return null;
+              if (allowed && !allowed.has(normalizeKey(name))) return null;
+              return [
+                name,
+                refitIdx >= 0 ? row[parsed.header[refitIdx]] ?? "" : "",
+                dropIdx >= 0 ? row[parsed.header[dropIdx]] ?? "" : "",
+                diffIdx >= 0 ? row[parsed.header[diffIdx]] ?? "" : "",
+              ];
+            })
+            .filter(Boolean);
+          if (!rows.length) return null;
+          return {
+            header: [
+              "Feature_Combination",
+              "LogLik_Refit_Copula",
+              "LogLik_Drop_Refit",
+              "LogLik_Drop_vs_OriginalCombo",
+            ],
+            rows,
+          };
+        }
+
+        async function parseCombinationSection(zip) {
+          if (!zip) return null;
+          const candidates = ["combinations_compare.csv", "global.csv", "integrated.csv"];
+          let entry = null;
+          for (const name of candidates) {
+            const found = findEntry(zip, name);
+            if (found) {
+              entry = found;
+              break;
+            }
+          }
+          if (!entry) return null;
+          const parsed = parseCSV(await entry.async("string"));
+          const allowed = pickTopCombosFromParsed(parsed);
+          return buildCombinationSectionFromParsed(parsed, allowed);
+        }
+
+        function buildSummarySection(rows) {
+          if (!rows || !rows.length) return null;
+          const order = ["conservative", "balanced", "riskfirst"];
+          const ordered = [];
+          order.forEach((tier) => {
+            const found = rows.find((r) => normalizeKey(r.tier) === normalizeKey(tier));
+            if (found) ordered.push(found);
+          });
+          if (!ordered.length) ordered.push(...rows);
+          const fmt = (v, d = 2) => {
+            const n = Number(v);
+            return Number.isFinite(n) ? n.toFixed(d) : v ?? "";
+          };
+          const mapped = ordered.map((r) => [
+            r.tier,
+            r.percentile ?? "",
+            fmt(r.threshold, 2),
+            fmt(r.fpr, 2),
+            fmt(r.recall, 2),
+            fmt(r.f1, 3),
+            fmt(r.mae, 2),
+          ]);
+          return {
+            header: ["Tier", "Percentile", "Threshold", "FPR", "Recall", "F1", "MAE"],
+            rows: mapped,
+          };
+        }
+
+        async function updateExportData(zip, strategyGroupsFallback = null) {
+          try {
+            const [summaryRows, strategyRows, comboSection] = await Promise.all([
+              parseSummaryForExport(zip),
+              parseStrategyTableFromZip(zip),
+              parseCombinationSection(zip),
+            ]);
+            let stratRows = strategyRows || [];
+
+            // Fallback: load local strategy CSV if it exists in the same directory
+            if (!stratRows || !stratRows.length) {
+              try {
+                const resp = await fetch("feature_statistics_with_strategy.csv", {
+                  cache: "no-cache",
+                });
+                if (resp.ok) {
+                  const text = await resp.text();
+                  stratRows = parseStrategyTableForExport(text) || [];
+                }
+              } catch (err) {
+                console.warn("local strategy CSV fetch failed", err);
+              }
+            }
+
+            // Fallback: use grouped strategies only (no pct/thr)
+            if ((!stratRows || !stratRows.length) && strategyGroupsFallback) {
+              const pretty = (k) => {
+                const key = (k || "").toLowerCase();
+                if (key.includes("density")) return "Density-based";
+                if (key.includes("log") && key.includes("bin")) return "Log binning";
+                if (key.includes("kmeans")) return "KMeans";
+                if (key.includes("decision")) return "Decision Tree";
+                return k;
+              };
+              stratRows = Object.entries(strategyGroupsFallback || {}).flatMap(
+                ([strat, feats]) =>
+                  (feats || []).map((f) => ({
+                    feature: f,
+                    strategy: pretty(strat),
+                    pct: "",
+                    thr: "",
+                  }))
+              );
+            }
+            shared.exportData = {
+              summary: summaryRows || [],
+              strategies: stratRows || [],
+              combinations: comboSection || null,
+            };
+          } catch (err) {
+            console.warn("export data parse failed", err);
+            shared.exportData = { summary: [], strategies: [], combinations: null };
+          }
+        }
+
+        async function exportCsvReport() {
+          const lines = [];
+          const esc = (v) => {
+            const s = v == null ? "" : String(v);
+            return /[\",\\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+          };
+          const addSection = (title, header, rows) => {
+            if (!rows?.length) return;
+            lines.push(title);
+            lines.push(header.join(","));
+            rows.forEach((r) => lines.push(r.map(esc).join(",")));
+            lines.push("");
+          };
+
+          const summarySection = buildSummarySection(shared.exportData?.summary);
+          if (summarySection) {
+            addSection("Recommended Thresholds", summarySection.header, summarySection.rows);
+          }
+
+          const stratRows = shared.exportData?.strategies || [];
+          if (stratRows.length) {
+            addSection(
+              "Feature Strategies",
+              ["Feature", "Strategy"],
+              stratRows.map((r) => [r.feature, r.strategy])
+            );
+          }
+
+          let comboSection = shared.exportData?.combinations;
+          if (!comboSection || !comboSection.rows?.length) {
+            try {
+              const resp = await fetch("global.csv", { cache: "no-cache" });
+              if (resp.ok) {
+                const text = await resp.text();
+                const parsed = parseCSV(text);
+                comboSection = buildCombinationSectionFromParsed(
+                  parsed,
+                  pickTopCombosFromParsed(parsed)
+                );
+              }
+            } catch (err) {
+              console.warn("fallback combo parse failed", err);
+            }
+          }
+          if (comboSection?.rows?.length) {
+            addSection(
+              "Top Combinations (visible portion)",
+              comboSection.header,
+              comboSection.rows
+            );
+          }
+
+          const hasData = lines.some((ln) => ln.trim() !== "");
+          if (!hasData) return;
+          const blob = new Blob([lines.join("\r\n")], {
+            type: "text/csv;charset=utf-8;",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "anonyviz-report.csv";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }
+        shared.exportCsvReport = exportCsvReport;
+
+
+        // Load combos from a local CSV (fallback when ZIP이 없는 경우)
+        async function loadDefaultCombinationFile() {
+          try {
+            const resp = await fetch("global.csv", { cache: "no-cache" });
+            if (!resp.ok) return;
+            const text = await resp.text();
+            const parsed = parseCSV(text);
+            const combos = pickTopCombosFromParsed(parsed);
+            if (!combos || !combos.length) return;
+            const alreadySet = comboEls.some(
+              (el) => el.textContent && !el.textContent.includes(fallbackCombo)
+            );
+            if (alreadySet) return;
+            setRecommendedCombos(combos);
+            const comboSection = buildCombinationSectionFromParsed(parsed, combos);
+            if (comboSection) {
+              shared.exportData.combinations = comboSection;
+            }
+            await updateExportData(null, shared.strategyGroups);
+            if (fileName) fileName.textContent = "기본 global.csv 로드됨";
+            showDashboard();
+          } catch (err) {
+            console.warn("기본 global.csv 로드 실패", err);
+          }
+        }
+
+        async function processZip(file) {
+          if (!file || !window.JSZip) {
+            setTierValues();
+            setStrategyFeatures();
+            setRecommendedCombos();
+            shared.exportData = { summary: [], strategies: [], combinations: null };
+            return;
+          }
+          try {
+            const zip = await JSZip.loadAsync(file);
+            shared.latestZipFile = file;
+            const tiers = await parseTierData(zip);
+            const strategies = await parseStrategyData(zip);
+            const combos = await parseCombinationResults(zip);
+            await updateExportData(zip, strategies);
+            setTierValues(tiers);
+            setStrategyFeatures(strategies);
+            setRecommendedCombos(combos);
+          } catch (err) {
+            console.warn("ZIP ??? ????", err);
+            setTierValues();
+            setStrategyFeatures();
+            setRecommendedCombos();
+            shared.exportData = { summary: [], strategies: [], combinations: null };
+          }
+        }
+
+        const hideDashboard = () => {
+          dashboard?.classList.remove("visible");
+          dashboard?.setAttribute("aria-hidden", "true");
+        };
+
+        const showDashboard = () => {
+          if (!dashboard) return;
+          dashboard.classList.add("visible");
+          dashboard.setAttribute("aria-hidden", "false");
+          dashboard.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+
+        uploadTrigger.addEventListener("click", () => {
+          dataUpload.value = "";
+          fileName.textContent = "";
+          hideDashboard();
+          dataUpload.click();
+        });
+
+        dataUpload.addEventListener("change", () => {
+          const [file] = dataUpload.files;
+          if (!file) return;
+          if (!file.name.toLowerCase().endsWith(".zip")) {
+            alert("ZIP 파일만 업로드할 수 있습니다.");
+            dataUpload.value = "";
+            fileName.textContent = "";
+            hideDashboard();
+            safeZipClear().catch(() => {});
+            latestZipSave = null;
+            setParsingPromise(Promise.resolve());
+            shared.exportData = { summary: [], strategies: [], combinations: null };
+            setTierValues();
+            setStrategyFeatures();
+            setRecommendedCombos();
+            return;
+          }
+          fileName.textContent = `${file.name}`;
+          showDashboard();
+          latestZipSave = safeZipSave(file);
+          latestZipSave.catch((err) => console.warn("ZIP save failed", err));
+          setParsingPromise(processZip(file));
+        });
+
+        document.querySelectorAll(".step-card[data-link]").forEach((card) => {
+          const navigate = async () => {
+            if (latestZipSave) {
+              try {
+                await latestZipSave;
+              } catch (err) {
+                console.warn("ZIP wait before navigation failed", err);
+              }
+            }
+            window.location.href = card.dataset.link;
+          };
+          card.addEventListener("click", async (e) => {
+            if (!e.target.closest("button")) await navigate();
+          });
+          card.querySelector("button")?.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await navigate();
+          });
+        });
+
+        (async function tryRestoreZip() {
+          if (!window.ZipBridge) return;
+          try {
+            const stored = await ZipBridge.load();
+            if (!stored?.blob) return;
+            const restoredFile = new File([stored.blob], stored.name || "bundle.zip", {
+              type: "application/zip",
+              lastModified: stored.lastModified || Date.now(),
+            });
+            const dt = new DataTransfer();
+            dt.items.add(restoredFile);
+            dataUpload.files = dt.files;
+            fileName.textContent = `${restoredFile.name}`;
+            showDashboard();
+            latestZipSave = Promise.resolve(stored);
+            setParsingPromise(processZip(restoredFile));
+          } catch (err) {
+            console.warn("ZIP 상태 복원 실패", err);
+          }
+        })();
+
+        setParsingPromise(loadDefaultCombinationFile());
+
+        document.querySelectorAll(".flow-row--strategy").forEach((row) => {
+          const head = row.querySelector(".flow-strategy-head");
+          const toggle = () => {
+            const expanded = row.getAttribute("aria-expanded") === "true";
+            row.setAttribute("aria-expanded", expanded ? "false" : "true");
+          };
+          head?.addEventListener("click", toggle);
+          head?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggle();
+            }
+          });
+        });
+
+      })();
+    </script>
+
+    <!-- PDF export (REPORT DOWNLOAD) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-bUsOFY1pZD3lCVEoX0YKIzrtEbFwEYb+NbL5AqMdG2Ha4HbplGS9oHV8uKXa71c5wr9LXL3/97nM1BLa3VxwBg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-R2DuW1weZ4ARwGZpvGn3XZRr9YjbpxPFxSU55rVDfqFbmB7HCFPwoJeB/BcXWZk/Q2OM9j+7VBm7uIqFbi3fIA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function () {
+        const downloadLink = document.querySelector(".download-pill a");
+        const captureTarget = document.querySelector(".flow-panels");
+        const shared = window.anonyvizContext || {};
+        if (!downloadLink || !captureTarget) return;
+
+        // Always generate from the live HTML, not a static PDF file.
+        downloadLink.addEventListener("click", async (e) => {
+          e.preventDefault();
+
+          downloadLink.style.pointerEvents = "none";
+          downloadLink.setAttribute("aria-busy", "true");
+
+          try {
+            const waitParsing = shared.parsingPromise || Promise.resolve();
+            try {
+              await waitParsing;
+            } catch (_) {}
+
+            if (typeof shared.exportCsvReport === "function") {
+              try {
+                await shared.exportCsvReport();
+              } catch (csvErr) {
+                console.warn("CSV download failed", csvErr);
+              }
+            }
+
+            if (!window.html2canvas || !window.jspdf || !window.jspdf.jsPDF) return;
+
+            const ready =
+              captureTarget.offsetWidth > 0 &&
+              captureTarget.offsetHeight > 0 &&
+              getComputedStyle(captureTarget).display !== "none";
+            if (!ready) return;
+
+            // Ensure webfonts (?? ??) are loaded before capture.
+            if (document.fonts && document.fonts.ready) {
+              await document.fonts.ready;
+            }
+
+            const scale = Math.min(3, (window.devicePixelRatio || 1) * 2);
+            const canvas = await html2canvas(captureTarget, {
+              backgroundColor: getComputedStyle(document.body).backgroundColor || "#000",
+              scale,
+              useCORS: true,
+              letterRendering: true,
+            });
+            const imgData = canvas.toDataURL("image/png");
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+              orientation: canvas.width >= canvas.height ? "landscape" : "portrait",
+              unit: "px",
+              format: [canvas.width, canvas.height],
+            });
+            pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+            pdf.save("anonyviz-report.pdf");
+          } catch (err) {
+            console.warn("PDF download failed", err);
+          } finally {
+            downloadLink.style.pointerEvents = "";
+            downloadLink.removeAttribute("aria-busy");
+          }
+        });
+      })();
+    </script>
+
+  </body>
+</html>
